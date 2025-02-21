@@ -1,4 +1,5 @@
-requests
-moviepy
-numpy
-openai
+request==2.31.0
+moviepy==1.0.3
+numpy==1.25.2	
+openai==0.28.0	
+python-dotenv==1.0.0
