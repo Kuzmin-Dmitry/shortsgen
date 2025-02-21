@@ -1,0 +1,7 @@
+text
+requests
+gTTS
+moviepy
+opencv-python
+numpy
+openai
