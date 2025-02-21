@@ -17,8 +17,8 @@ DEFAULT_VIDEO_OUTPUT_DIR = os.path.join(DEFAULT_OUTPUT_DIR, "video")
 DEFAULT_VOICE_OUTPUT_DIR = os.path.join(DEFAULT_OUTPUT_DIR, "voice")
 DEFAULT_TEXT_OUTPUT_DIR = os.path.join(DEFAULT_OUTPUT_DIR, "text")
 
-VOICE_FILE_PATH = os.path.join(DEFAULT_VOICE_OUTPUT_DIR, "/voice.mp3")
-VIDEO_FILE_PATH = os.path.join(DEFAULT_VIDEO_OUTPUT_DIR, "/video.mp4")
+VOICE_FILE_PATH = os.path.join(DEFAULT_VOICE_OUTPUT_DIR, "voice.mp3")
+VIDEO_FILE_PATH = os.path.join(DEFAULT_VIDEO_OUTPUT_DIR, "video.mp4")
 
 # DALLE_MODEL = "dall-e-3"
 DALLE_MODEL = "dall-e-2"
