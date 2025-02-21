@@ -1,10 +1,5 @@
-
-#Package	Latest Version
 request==2.31.0
-gTTS==2.3.2
 moviepy==1.0.3
-opencv-python==4.8.0.76
 numpy==1.25.2	
 openai==0.28.0	
 python-dotenv==1.0.0
-
