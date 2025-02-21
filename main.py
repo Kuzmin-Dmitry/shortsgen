@@ -14,6 +14,7 @@ from services.audio_service import generate_audio
 from services.video_service import create_video_with_transitions
 from services.chat_service import generate_chatgpt_text
 from services.image_service import generate_images
+from config import DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH
 
 def main():
     # Step 1: Generate a mini-novel scenario using ChatGPT.
@@ -92,35 +93,30 @@ def main():
 
     # Step 4: Prepare directories and generate images.
     # Create a temporary directory for storing the generated images.
-    image_dir = "./output/generated_images"
-    print(f"Checking/creating directory: {image_dir}")
-    os.makedirs(image_dir, exist_ok=True)
-    audio_file_path = "./output/narration.mp3"
+    print(f"Checking/creating directory: {DEFAULT_IMAGES_OUTPUT_DIR}")
+    os.makedirs(DEFAULT_IMAGES_OUTPUT_DIR, exist_ok=True)
 
     # Generate images based on the refined prompts.
-    image_gen_results = generate_images(image_prompts, image_dir)
+    image_gen_results = generate_images(image_prompts, DEFAULT_IMAGES_OUTPUT_DIR)
     if not all(image_gen_results):
         print("Error: Some images failed to generate. Exiting.")
         return
 
     # Step 5: Generate audio narration for the entire novella scenario.
     # Note: The same novella text is used to generate the audio narration.
-    if not generate_audio(novella_text, audio_file_path, language='ru'):
+    if not generate_audio(novella_text, VOICE_FILE_PATH, language='ru'):
         print("Error: Audio generation failed. Exiting.")
         return
 
-    # Final Step: Create the video by combining the generated images and audio.
-    images_directory = image_dir  # Directory containing the generated images
-    final_video_path = "./output/output_video.mp4"
-
+    # Step 6: Create the video by combining the generated images and audio.
     try:
-        create_video_with_transitions(images_directory, audio_file_path, final_video_path, apply_fades=False)
+        create_video_with_transitions(DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, apply_fades=False)
     except Exception as error:
         print(f"Error during video creation: {error}")
         return
 
     print("All stages completed successfully!")
-    print(f"Final video saved at: {final_video_path}")
+    print(f"Final video saved at: {VIDEO_FILE_PATH}")
 
 if __name__ == "__main__":
     main()

@@ -1,47 +1,20 @@
 """
-Module for generating images using DALL-E 3.
+Module for generating images using DALL-E.
 
-This module leverages the powerful capabilities of DALL-E 3 to transform your text prompts into creative visuals.
+This module leverages the powerful capabilities of DALL-E to transform your text prompts into creative visuals.
 Note: Ensure your API key is kept secure and use detailed prompts for the best results.
 """
 
 import os
 import requests
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, DEFAULT_IMAGE_SIZE, DEFAULT_OUTPUT_DIR, DALLE_MODEL, DEFAULT_IMAGES_OUTPUT_DIR
 from openai import OpenAI
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-
-def prepare_output_directory(output_dir: str) -> str:
+def generate_image_url(prompt: str, size: str = "1024x1024", dalle_model=DALLE_MODEL) -> str:
     """
-    Prepares the directory for saving images.
-    
-    If 'output_dir' contains a file extension, its base name is used instead.
-    If the specified path exists but is not a directory, an error is raised.
-    
-    Returns:
-        A valid directory path for saving images.
-    """
-    if os.path.splitext(output_dir)[1]:
-        new_output_dir = os.path.splitext(output_dir)[0]
-        print(
-            f"Warning: '{output_dir}' contains a file extension. Using directory '{new_output_dir}' for saving images."
-        )
-        output_dir = new_output_dir
-
-    if os.path.exists(output_dir) and not os.path.isdir(output_dir):
-        raise ValueError(
-            f"Error: '{output_dir}' exists and is not a directory. Please provide a directory path for saving images."
-        )
-
-    os.makedirs(output_dir, exist_ok=True)
-    return output_dir
-
-
-def generate_image_url(prompt: str, size: str = "1024x1024") -> str:
-    """
-    Generates an image based on a text prompt using DALL-E 3.
+    Generates an image based on a text prompt using DALL-E.
     
     Args:
         prompt: The text prompt to generate the image.
@@ -51,7 +24,7 @@ def generate_image_url(prompt: str, size: str = "1024x1024") -> str:
         The URL of the generated image, or None if no URL could be retrieved.
     """
     response = client.images.generate(
-        model="dall-e-3",
+        model=dalle_model,
         prompt=prompt,
         n=1,
         size=size
@@ -84,7 +57,7 @@ def download_image(image_url: str, output_path: str) -> bool:
         return False
 
 
-def process_prompt(prompt: str, index: int, output_dir: str, size: str = "1024x1024") -> bool:
+def process_prompt(prompt: str, index: int, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
     """
     Processes a single prompt by performing the following steps:
       1. Generates an image URL from the given text prompt.
@@ -114,7 +87,7 @@ def process_prompt(prompt: str, index: int, output_dir: str, size: str = "1024x1
         return False
 
 
-def generate_images(prompts: list, output_dir: str, size: str = "1024x1024") -> list:
+def generate_images(prompts: list, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> list:
     """
     Generates images from a list of text prompts.
     
@@ -128,9 +101,8 @@ def generate_images(prompts: list, output_dir: str, size: str = "1024x1024") -> 
     Returns:
         A list of boolean values indicating whether each image was generated successfully.
     """
-    output_dir = prepare_output_directory(output_dir)
     results = []
     for i, prompt in enumerate(prompts):
-        success = process_prompt(prompt, i, output_dir, size)
+        success = process_prompt(prompt, i, DEFAULT_IMAGES_OUTPUT_DIR, size)
         results.append(success)
     return results
