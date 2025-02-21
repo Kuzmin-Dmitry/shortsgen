@@ -14,7 +14,7 @@ from services.audio_service import generate_audio
 from services.video_service import create_video_with_transitions
 from services.chat_service import generate_chatgpt_text
 from services.image_service import generate_images
-from config import DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH
+from config import DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, DEFAULT_VOICE_OUTPUT_DIR, DEFAULT_VIDEO_OUTPUT_DIR
 
 def main():
     # Step 1: Generate a mini-novel scenario using ChatGPT.
@@ -97,18 +97,24 @@ def main():
     os.makedirs(DEFAULT_IMAGES_OUTPUT_DIR, exist_ok=True)
 
     # Generate images based on the refined prompts.
-    image_gen_results = generate_images(image_prompts, DEFAULT_IMAGES_OUTPUT_DIR)
-    if not all(image_gen_results):
-        print("Error: Some images failed to generate. Exiting.")
-        return
+    # image_gen_results = generate_images(image_prompts, DEFAULT_IMAGES_OUTPUT_DIR)
+    # if not all(image_gen_results):
+    #     print("Error: Some images failed to generate. Exiting.")
+    #     return
 
     # Step 5: Generate audio narration for the entire novella scenario.
     # Note: The same novella text is used to generate the audio narration.
+    print(f"Checking/creating directory: {DEFAULT_VOICE_OUTPUT_DIR}")
+    os.makedirs(DEFAULT_VOICE_OUTPUT_DIR, exist_ok=True)
+
     if not generate_audio(novella_text, VOICE_FILE_PATH, language='ru'):
         print("Error: Audio generation failed. Exiting.")
         return
 
     # Step 6: Create the video by combining the generated images and audio.
+    print(f"Checking/creating directory: {DEFAULT_VIDEO_OUTPUT_DIR}")
+    os.makedirs(DEFAULT_VIDEO_OUTPUT_DIR, exist_ok=True)
+
     try:
         create_video_with_transitions(DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, apply_fades=False)
     except Exception as error:
