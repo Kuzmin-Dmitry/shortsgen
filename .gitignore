@@ -8,3 +8,6 @@ myenv/
 
 # Ignore generated files
 output/
+Lib/
+Scripts/
+pyvenv.cfg
