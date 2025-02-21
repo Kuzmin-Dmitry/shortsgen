@@ -13,18 +13,22 @@ from openai import OpenAI
 # Initialize the OpenAI client with the API key.
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-def generate_audio(text, output_path, language='ru', model=OPENAI_MODEL, system_promt=SYSTEM_PROMPT, 
-                   user_prompt=USER_PROMPT, assistant_message=ASSISTANT_MESSAGE):
+def generate_audio(output_path, language='ru', model=OPENAI_MODEL, system_promt=SYSTEM_PROMPT, 
+                   user_prompt=USER_PROMPT, assistant_message=ASSISTANT_MESSAGE, audio_config=AUDIO_CONFIG):
     """
-    Generates an audio file narrating the provided text.
-    
+    Generates an audio file using OpenAI's synthesis capabilities.
+
     Parameters:
-        text (str): The text to be narrated.
-        output_path (str): The file path where the generated audio file will be saved.
-        language (str): The language code for narration (currently unused; default is 'ru').
-    
+        output_path (str): File path to save the audio file.
+        language (str): Language code for narration (currently unused, default 'ru').
+        model: OpenAI model used for speech synthesis.
+        system_promt: System message setting the initial context and tone.
+        user_prompt: User prompt defining the core content.
+        assistant_message: Assistant message that enriches the context.
+        audio_config: Audio configuration including sample rate, bitrate, etc.
+
     Returns:
-        bool: True if the audio was successfully generated and saved, otherwise False.
+        bool: True if the audio file was successfully created and saved, otherwise False.
     """
     try:
         print("Generating audio track using GPT‑4o‑audio‑preview...")
@@ -33,7 +37,7 @@ def generate_audio(text, output_path, language='ru', model=OPENAI_MODEL, system_
         response = client.chat.completions.create(
             model=model,
             modalities=["text", "audio"],
-            audio=AUDIO_CONFIG,
+            audio=audio_config,
             messages=[
                 {"role": "system", "content": system_promt},
                 {"role": "user", "content": user_prompt},
