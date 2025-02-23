@@ -10,11 +10,10 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 def generate_chatgpt_text(prompt, max_tokens=300):
     """
-    Generates multiple text responses using the ChatGPT API based on the provided prompt.
+    Generates text response using the ChatGPT API based on the provided prompt.
     Returns a list containing the generated texts.
     """
     print(f"Sending request to ChatGPT: {prompt}")  # Log the outgoing prompt.
-    responses = []
     # Request a text completion from ChatGPT.
     response = client.chat.completions.create(
         model="gpt-4o-mini",  # The model identifier can be customized as needed.
@@ -26,7 +25,6 @@ def generate_chatgpt_text(prompt, max_tokens=300):
         temperature=0.8  # Adjust temperature to control the creativity of the output.
     )
     # Clean and store the generated text.
-    text = response.choices[0].message.content.strip()
-    responses.append(text)
-    print("Received responses from ChatGPT.")  # Confirm that responses have been collected.
-    return responses
+    response = response.choices[0].message.content.strip()
+    print("Received response from ChatGPT.")  # Confirm that response have been collected.
+    return response

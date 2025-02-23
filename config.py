@@ -43,7 +43,7 @@ SYSTEM_PROMPT = (
     "Speak with a clear Russian accent."
 )
 
-USER_PROMPT = "Please narrate the following text with maximum clarity and emotion, but quickly: «{text}»"
+USER_PROMPT = "Please narrate the following text with maximum clarity and emotion, but really quickly: «{text}»"
 
 # Сообщение подтверждения (вынесено для возможной интернационализации)
 ASSISTANT_MESSAGE = "Audio output generated. The transcript of the audio is provided below."
