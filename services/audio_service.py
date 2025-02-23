@@ -1,3 +1,5 @@
+# audio_service.py
+
 """
 Module for generating an audio track with narration using GPT‑4o‑audio‑preview.
 
@@ -36,7 +38,7 @@ def generate_audio(text, output_path, language='ru', model=OPENAI_MODEL, system_
             audio=AUDIO_CONFIG,
             messages=[
                 {"role": "system", "content": system_promt},
-                {"role": "user", "content": user_prompt},
+                {"role": "user", "content": user_prompt.format(text=text)},
                 {"role": "assistant", "content": assistant_message}
             ]
         )
