@@ -57,7 +57,7 @@ def download_image(image_url: str, output_path: str) -> bool:
         return False
 
 
-def process_prompt(prompt: str, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
+def process_prompt(prompt: str, output_dir: str, image_filename: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
     """
     Processes a single prompt by performing the following steps:
       1. Generates an image URL from the given text prompt.
@@ -75,7 +75,6 @@ def process_prompt(prompt: str, output_dir: str, size: str = DEFAULT_IMAGE_SIZE)
     try:
         image_url = generate_image_url(prompt, size)
         if image_url:
-            image_filename = "generated_image.jpg"
             output_path = os.path.join(output_dir, image_filename)
             return download_image(image_url, output_path)
         else:
@@ -86,7 +85,7 @@ def process_prompt(prompt: str, output_dir: str, size: str = DEFAULT_IMAGE_SIZE)
         return False
 
 
-def generate_image(prompt: str, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
+def generate_image(prompt: str, output_dir: str, image_filename: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
     """
     Generates an image from a text prompt.
     
@@ -100,4 +99,4 @@ def generate_image(prompt: str, output_dir: str, size: str = DEFAULT_IMAGE_SIZE)
     Returns:
         True if the image was generated and saved successfully, otherwise False.
     """
-    return process_prompt(prompt, output_dir, size)
+    return process_prompt(prompt, output_dir, image_filename, size)

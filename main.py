@@ -41,7 +41,7 @@ def main():
     print("\n" + "=" * 80 + "\n")
 
     # Step 2: Divide the scenario into key scenes.
-    count_scenes = 4  # Expected number of scenes
+    count_scenes = 6  # Expected number of scenes
     frames_prompt = (
         f"Divide the following text into {count_scenes} iconic and striking scenes. "
         "Each frame should have a minimalist style with vivid comic-style visuals. "
@@ -49,7 +49,7 @@ def main():
         f"Text: {novella_text}\n"
         "Add a General description of the environment as the fifth scene for creating a drawing, up to 100 words long."
     )
-    frames_text = generate_chatgpt_text(frames_prompt, max_tokens=600)
+    frames_text = generate_chatgpt_text(frames_prompt, max_tokens=count_scenes * 100 + 200)
 
     print("Generated scene descriptions:")
     print(frames_text)
@@ -59,7 +59,6 @@ def main():
     os.makedirs(DEFAULT_IMAGES_OUTPUT_DIR, exist_ok=True)
 
     # Step 3: Generate images for each scene.
-    # Итерация по номерам сцен от 1 до count_scenes включительно.
     for scene in range(1, count_scenes + 1):
         prompt_for_image = (
             f"Visually define and describe the scene number \"{scene}\" in the text: \"{frames_text}\". "
@@ -68,11 +67,10 @@ def main():
             "Focus on the visual details and mood, using the text as general context."
         )
         image_prompt = generate_chatgpt_text(prompt_for_image, max_tokens=100)
-        # Если результат возвращается в виде списка, берем первый элемент
-        if isinstance(image_prompt, list):
-            image_prompt = image_prompt[0]
+
         print(f"Generating image for prompt: {image_prompt}")
-        image_gen_result = generate_image(image_prompt, DEFAULT_IMAGES_OUTPUT_DIR)
+        image_filename = f"image_{scene}.jpg"
+        image_gen_result = generate_image(image_prompt, DEFAULT_IMAGES_OUTPUT_DIR, image_filename)
         if not image_gen_result:
             print(f"Error: Image generation failed for scene {scene}. Exiting.")
             return
@@ -81,15 +79,16 @@ def main():
     print(f"Checking/creating directory: {DEFAULT_VOICE_OUTPUT_DIR}")
     os.makedirs(DEFAULT_VOICE_OUTPUT_DIR, exist_ok=True)
 
-    if not generate_audio(novella_text, VOICE_FILE_PATH, language='ru'):
-        print("Error: Audio generation failed. Exiting.")
+    try:
+        generate_audio(novella_text, VOICE_FILE_PATH, language='ru')
+    except Exception as error:
+        print(f"Error during voice creation: {error}")
         return
 
     # Step 6: Create the video by combining the generated images and audio.
     print(f"Checking/creating directory: {DEFAULT_VIDEO_OUTPUT_DIR}")
     os.makedirs(DEFAULT_VIDEO_OUTPUT_DIR, exist_ok=True)
 
-    # Пример вызова функции создания видео (если потребуется, раскомментировать)
     try:
         create_video_with_transitions(DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, apply_fades=False)
     except Exception as error:
