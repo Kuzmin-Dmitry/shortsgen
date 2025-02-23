@@ -57,7 +57,7 @@ def download_image(image_url: str, output_path: str) -> bool:
         return False
 
 
-def process_prompt(prompt: str, index: int, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
+def process_prompt(prompt: str, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
     """
     Processes a single prompt by performing the following steps:
       1. Generates an image URL from the given text prompt.
@@ -65,18 +65,17 @@ def process_prompt(prompt: str, index: int, output_dir: str, size: str = DEFAULT
       
     Args:
         prompt: The text prompt to process.
-        index: The index of the prompt (used for naming the output image file).
         output_dir: The directory where the image will be saved.
         size: The desired image dimensions (default is "1024x1024").
         
     Returns:
         True if all steps complete successfully, otherwise False.
     """
-    print(f"Generating image for prompt {index+1}: {prompt}")
+    print(f"Generating image for prompt: {prompt}")
     try:
         image_url = generate_image_url(prompt, size)
         if image_url:
-            image_filename = f"generated_image_{index+1}.jpg"
+            image_filename = "generated_image.jpg"
             output_path = os.path.join(output_dir, image_filename)
             return download_image(image_url, output_path)
         else:
@@ -87,22 +86,18 @@ def process_prompt(prompt: str, index: int, output_dir: str, size: str = DEFAULT
         return False
 
 
-def generate_images(prompts: list, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> list:
+def generate_image(prompt: str, output_dir: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
     """
-    Generates images from a list of text prompts.
+    Generates an image from a text prompt.
     
-    Each image is saved in the specified directory.
+    The image is saved in the specified directory.
     
     Args:
-        prompts: A list of text prompts.
-        output_dir: The directory where images will be saved.
-        size: The desired image dimensions for each generated image (default is "1024x1024").
+        prompt: A text prompt.
+        output_dir: The directory where the image will be saved.
+        size: The desired image dimensions for the generated image (default is "1024x1024").
         
     Returns:
-        A list of boolean values indicating whether each image was generated successfully.
+        True if the image was generated and saved successfully, otherwise False.
     """
-    results = []
-    for i, prompt in enumerate(prompts):
-        success = process_prompt(prompt, i, DEFAULT_IMAGES_OUTPUT_DIR, size)
-        results.append(success)
-    return results
+    return process_prompt(prompt, output_dir, size)
