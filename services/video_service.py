@@ -11,6 +11,9 @@ from PIL import Image
 import numpy as np
 from moviepy import ImageClip
 from moviepy.video.VideoClip import VideoClip
+import textwrap
+from moviepy import TextClip, concatenate_videoclips, ColorClip
+
 
 def validate_resources(image_folder: str, audio_file: str, valid_extensions: tuple) -> list:
     if not os.path.isdir(image_folder):
@@ -116,21 +119,69 @@ def compose_video(clips: list, audio_clip: AudioFileClip, output_file: str, fps:
     final_clip.fps = fps
     final_clip.write_videofile(output_file, codec='libx264', audio_codec='aac')
 
-def create_video_with_transitions(image_folder: str, audio_file: str, output_file: str,
+def create_text_video(text, duration, chunk_size=15, fontsize=20, color='white', 
+                     bg_color='black', size=(1280, 720), font_path='arial.ttf'):
+    chunks = textwrap.wrap(text, width=chunk_size, break_long_words=False)
+    num_chunks = len(chunks)
+    
+    if num_chunks == 0:
+        if bg_color is None:
+            return ColorClip(size, color=(0, 0, 0), duration=duration)
+        return ColorClip(size, color=bg_color, duration=duration)
+    
+    chunk_duration = duration / num_chunks
+    clips = [
+        TextClip(
+            text=chunk,
+            font=font_path,  # Обязательный параметр!
+            font_size=fontsize,
+            color=color,
+            bg_color=bg_color,
+            size=size,  # Исправлено: размер должен соответствовать видео
+            method='label'  # Оптимальный метод рендеринга
+        ).with_duration(chunk_duration)
+        for chunk in chunks
+    ]
+    return concatenate_videoclips(clips)
+
+def create_video_with_transitions(image_folder: str, audio_file: str, output_file: str, text: str,
                                   apply_fades: bool = False, fade_duration: float = 0.5, fps: int = 24) -> None:
     valid_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.gif')
     
-    # Step 1: Validate and obtain the list of images.
+    # Validate resources
     image_files = validate_resources(image_folder, audio_file, valid_extensions)
     
-    # Step 2: Load the audio clip.
-    audio_clip = load_audio(audio_file)
+    # Load audio
+    audio_clip = AudioFileClip(audio_file)
     
-    # Step 3: Calculate the duration for each image.
+    # Calculate per-image duration
     per_image_duration = audio_clip.duration / len(image_files)
     
-    # Step 4: Create video clips from the images.
+    # Create image clips
     clips = create_video_clips(image_files, per_image_duration, apply_fades, fade_duration)
     
-    # Step 5: Assemble the video clips and save the final video.
-    compose_video(clips, audio_clip, output_file, fps)
+    # Concatenate image clips
+    image_video = concatenate_videoclips(clips, method="compose")
+    
+    # Create and overlay text video if text is provided
+    if text:
+        text_video = create_text_video(
+            text,
+            duration=image_video.duration,
+            color='white',
+            fontsize=20,
+            chunk_size=15,
+            bg_color=None  # Transparent background
+        )
+        final_clip = CompositeVideoClip([image_video, text_video.with_position('center')])
+    else:
+        final_clip = image_video
+    
+    # Convert to grayscale
+    #final_clip = final_clip.fx(blackwhite)
+    
+    # Set audio
+    final_clip = final_clip.with_audio(audio_clip)
+    
+    # Write the final video
+    final_clip.write_videofile(output_file, codec='libx264', audio_codec='aac', fps=fps)

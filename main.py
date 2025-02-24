@@ -90,7 +90,7 @@ def main():
     os.makedirs(DEFAULT_VIDEO_OUTPUT_DIR, exist_ok=True)
 
     try:
-        create_video_with_transitions(DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, apply_fades=False)
+        create_video_with_transitions(DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, novella_text, apply_fades=False)
     except Exception as error:
         print(f"Error during video creation: {error}")
         return
