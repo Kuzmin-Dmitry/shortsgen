@@ -47,3 +47,7 @@ USER_PROMPT = "Please narrate the following text with maximum clarity and emotio
 
 # Сообщение подтверждения (вынесено для возможной интернационализации)
 ASSISTANT_MESSAGE = "Audio output generated. The transcript of the audio is provided below."
+
+# Testing features
+TEST_AUDIO = True  # Skip audio generation if voice.mp3 exists
+TEST_IMAGES = True  # Skip images generation if exist
