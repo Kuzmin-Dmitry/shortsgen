@@ -119,8 +119,8 @@ def compose_video(clips: list, audio_clip: AudioFileClip, output_file: str, fps:
     final_clip.fps = fps
     final_clip.write_videofile(output_file, codec='libx264', audio_codec='aac')
 
-def create_text_video(text, duration, chunk_size=15, fontsize=20, color='white', 
-                     bg_color='black', size=(1280, 720), font_path='arial.ttf'):
+def create_text_video(text, duration, chunk_size=40, fontsize=50, color='white', 
+                     bg_color='black', size=(1024, 100), font_path='arial.ttf'):
     chunks = textwrap.wrap(text, width=chunk_size, break_long_words=False)
     num_chunks = len(chunks)
     
@@ -144,7 +144,32 @@ def create_text_video(text, duration, chunk_size=15, fontsize=20, color='white',
     ]
     return concatenate_videoclips(clips)
 
-def create_video_with_transitions(image_folder: str, audio_file: str, output_file: str, text: str,
+def create_translated_text_video(text, duration, chunk_size=40, fontsize=50, color='white', 
+                     bg_color='black', size=(1024, 100), font_path='arial.ttf'):
+    chunks = textwrap.wrap(text, width=chunk_size, break_long_words=False)
+    num_chunks = len(chunks)
+    
+    if num_chunks == 0:
+        if bg_color is None:
+            return ColorClip(size, color=(0, 0, 0), duration=duration)
+        return ColorClip(size, color=bg_color, duration=duration)
+    
+    chunk_duration = duration / num_chunks
+    clips = [
+        TextClip(
+            text=chunk,
+            font=font_path,  # Обязательный параметр!
+            font_size=fontsize,
+            color=color,
+            bg_color=bg_color,
+            size=size,  # Исправлено: размер должен соответствовать видео
+            method='label'  # Оптимальный метод рендеринга
+        ).with_duration(chunk_duration)
+        for chunk in chunks
+    ]
+    return concatenate_videoclips(clips)
+
+def create_video_with_transitions(image_folder: str, audio_file: str, output_file: str, text: str, translation_text: str,
                                   apply_fades: bool = False, fade_duration: float = 0.5, fps: int = 24) -> None:
     valid_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.gif')
     
@@ -169,16 +194,30 @@ def create_video_with_transitions(image_folder: str, audio_file: str, output_fil
             text,
             duration=image_video.duration,
             color='white',
-            fontsize=20,
-            chunk_size=15,
+            fontsize=50,
+            chunk_size=35,
             bg_color=None  # Transparent background
         )
-        final_clip = CompositeVideoClip([image_video, text_video.with_position('center')])
-    else:
-        final_clip = image_video
+    #     first_clip = CompositeVideoClip([image_video, text_video.with_position((1,200))])
+    # else:
+    #     first_clip = image_video
     
     # Convert to grayscale
     #final_clip = final_clip.fx(blackwhite)
+
+    if translation_text:
+        text_translated_video = create_translated_text_video(
+            translation_text,
+            duration=image_video.duration,
+            color='white',
+            fontsize=50,
+            chunk_size=35,
+            bg_color=None  # Transparent background
+        )
+        final_clip = CompositeVideoClip([image_video, text_video.with_position((1,600)),text_translated_video.with_position((1,200))])
+    else:
+        final_clip = image_video
+    
     
     # Set audio
     final_clip = final_clip.with_audio(audio_clip)
