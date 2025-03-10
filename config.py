@@ -9,7 +9,7 @@ DEEPAI_API_KEY = os.getenv("DEEPAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # DEFAULT_IMAGE_SIZE = "1024x1024"
-DEFAULT_IMAGE_SIZE = "256x256"
+DEFAULT_IMAGE_SIZE = "1024x1024"
 DEFAULT_OUTPUT_DIR = os.getenv("DEFAULT_OUTPUT_DIR", "./output")
 
 DEFAULT_IMAGES_OUTPUT_DIR = os.path.join(DEFAULT_OUTPUT_DIR, "images")
@@ -49,5 +49,5 @@ USER_PROMPT = "Please narrate the following text with maximum clarity and emotio
 ASSISTANT_MESSAGE = "Audio output generated. The transcript of the audio is provided below."
 
 # Testing features
-TEST_AUDIO = True  # Skip audio generation if voice.mp3 exists
-TEST_IMAGES = True  # Skip images generation if exist
+TEST_AUDIO = False  # Skip audio generation if voice.mp3 exists
+TEST_IMAGES = False  # Skip images generation if exist
