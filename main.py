@@ -39,11 +39,11 @@ def main():
     print(novella_text)
     print("\n" + "=" * 80 + "\n")
     
-    translation_prompt = "Translate the following text into Russian: " + novella_text + "\n\n Your answer should contain only translation."
-    translation_text = generate_chatgpt_text(translation_prompt, max_tokens=600)
-    print("Generated novella translation:")
-    print(translation_prompt)
-    print("\n" + "=" * 80 + "\n")
+    # translation_prompt = "Translate the following text into Russian: " + novella_text + "\n\n Your answer should contain only translation."
+    # translation_text = generate_chatgpt_text(translation_prompt, max_tokens=600)
+    # print("Generated novella translation:")
+    # print(translation_prompt)
+    # print("\n" + "=" * 80 + "\n")
    
 
     # Step 2: Divide the scenario into key scenes.
@@ -96,7 +96,7 @@ def main():
     os.makedirs(DEFAULT_VIDEO_OUTPUT_DIR, exist_ok=True)
 
     try:
-        create_video_with_transitions(DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, novella_text, translation_text, apply_fades=False)
+        create_video_with_transitions(DEFAULT_IMAGES_OUTPUT_DIR, VOICE_FILE_PATH, VIDEO_FILE_PATH, novella_text, apply_fades=False)
     except Exception as error:
         print(f"Error during video creation: {error}")
         return
