@@ -49,5 +49,5 @@ USER_PROMPT = "Please narrate the following text with maximum clarity and emotio
 ASSISTANT_MESSAGE = "Audio output generated. The transcript of the audio is provided below."
 
 # Testing features
-TEST_AUDIO = False  # Skip audio generation if voice.mp3 exists
-TEST_IMAGES = False  # Skip images generation if exist
+TEST_AUDIO = True  # Skip audio generation if voice.mp3 exists
+TEST_IMAGES = True  # Skip images generation if exist
