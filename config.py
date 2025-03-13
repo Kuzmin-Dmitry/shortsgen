@@ -48,6 +48,35 @@ USER_PROMPT = "Please narrate the following text with maximum clarity and emotio
 # Сообщение подтверждения (вынесено для возможной интернационализации)
 ASSISTANT_MESSAGE = "Audio output generated. The transcript of the audio is provided below."
 
+# Number of scenes to generate
+NUMBER_OF_THE_SCENES = 6
+
+#
 # Testing features
+#
 TEST_AUDIO = True  # Skip audio generation if voice.mp3 exists
 TEST_IMAGES = True  # Skip images generation if exist
+
+#
+# FOR UI:
+#
+
+NOVELLA_PROMPT = (
+    "Create a mini-novel (up to 200 words) in the style of Sin City, where dark noir "
+    "and striking visual contrasts combine with top-notch meme quotes. "
+    "Let the story unfold on shadowy streets, where every dialogue is a burst of biting sarcasm "
+    "or a palette of irony, reflecting the reality we live in. "
+    "The characters, composed of cold-blooded resolve and daring courage, speak in the language of zoomers and alphas, "
+    "where memes are a means of communication and everything around is a game of manipulation. "
+    "Add unexpected twists and sharp phrases so that every line makes you think: "
+    "\"Oh, this isn’t trash and isn’t suffocating! Like and subscribe, damn it!\"."
+)
+
+#For Text on a picture
+HORIZONTAL_SIZE = 256
+
+#Amount of words in a chunk
+CHUNK_SIZE = 25
+
+# Font size for text on a picture   
+FONTSIZE = 20

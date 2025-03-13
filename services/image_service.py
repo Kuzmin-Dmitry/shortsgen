@@ -74,9 +74,9 @@ class ImageService:
         """
         print(f"Processing prompt: {prompt}")
         try:
-            sanitized_output_dir = self.sanitize_filename(output_dir)
+            #sanitized_output_dir = self.sanitize_filename(output_dir)
             sanitized_image_filename = self.sanitize_filename(image_filename)
-            output_path = os.path.join(sanitized_output_dir, sanitized_image_filename)
+            output_path = os.path.join(DEFAULT_IMAGES_OUTPUT_DIR, sanitized_image_filename)
             
             # TEST_IMAGES check
             if TEST_IMAGES and os.path.isfile(output_path):
@@ -98,7 +98,7 @@ class ImageService:
         Generates an image with TEST_VIDEO awareness.
         """
         # Create output directory if it doesn't exist
-        sanitized_output_dir = self.sanitize_filename(output_dir)
+        sanitized_output_dir = DEFAULT_IMAGES_OUTPUT_DIR
         os.makedirs(sanitized_output_dir, exist_ok=True)
         
         return self.process_prompt(
