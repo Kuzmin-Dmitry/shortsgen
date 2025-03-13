@@ -13,6 +13,11 @@ from moviepy import ImageClip
 from moviepy.video.VideoClip import VideoClip
 import textwrap
 from moviepy import TextClip, concatenate_videoclips, ColorClip
+from config import (
+    CHUNK_SIZE,
+    FONTSIZE,
+    HORIZONTAL_SIZE
+)
 
 
 class VideoEditor:
@@ -124,8 +129,8 @@ class VideoEditor:
         final_clip.fps = fps
         final_clip.write_videofile(output_file, codec='libx264', audio_codec='aac')
 
-    def create_text_video(self, text, duration, chunk_size=25, fontsize=20, color='white', 
-                        bg_color='black', size=(256, 100), font_path='arial.ttf'):
+    def create_text_video(self, text, duration, chunk_size=CHUNK_SIZE, fontsize=FONTSIZE, color='white', 
+                        bg_color='black', size=(HORIZONTAL_SIZE, 100), font_path='arial.ttf'):
         chunks = textwrap.wrap(text, width=chunk_size, break_long_words=False)
         num_chunks = len(chunks)
         
@@ -199,11 +204,11 @@ class VideoEditor:
                 text,
                 duration=image_video.duration,
                 color='white',
-                fontsize=20,
-                chunk_size=25,
+                fontsize=FONTSIZE,
+                chunk_size=CHUNK_SIZE,
                 bg_color=None  # Transparent background
-            )
-            final_clip = CompositeVideoClip([image_video, text_video.with_position((1,50))])
+                )
+            final_clip = CompositeVideoClip([image_video, text_video.with_position(("center", "bottom"))])
         else:
             final_clip = image_video
         
