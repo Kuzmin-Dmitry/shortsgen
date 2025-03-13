@@ -8,7 +8,9 @@ from config import (
     VOICE_FILE_PATH, 
     VIDEO_FILE_PATH, 
     DEFAULT_VOICE_OUTPUT_DIR, 
-    DEFAULT_VIDEO_OUTPUT_DIR
+    DEFAULT_VIDEO_OUTPUT_DIR,
+    NOVELLA_PROMPT,
+    NUMBER_OF_THE_SCENES
 )
 
 class Video:
@@ -20,23 +22,14 @@ class Video:
 
     def generate(self):
         # Step 1: Generate a mini-novel scenario using ChatGPT.
-        novella_prompt = (
-            "Create a mini-novel (up to 200 words) in the style of Sin City, where dark noir "
-            "and striking visual contrasts combine with top-notch meme quotes. "
-            "Let the story unfold on shadowy streets, where every dialogue is a burst of biting sarcasm "
-            "or a palette of irony, reflecting the reality we live in. "
-            "The characters, composed of cold-blooded resolve and daring courage, speak in the language of zoomers and alphas, "
-            "where memes are a means of communication and everything around is a game of manipulation. "
-            "Add unexpected twists and sharp phrases so that every line makes you think: "
-            "\"Oh, this isn’t trash and isn’t suffocating! Like and subscribe, damn it!\"."
-        )
+        novella_prompt = NOVELLA_PROMPT
         novella_text = self.chat_service.generate_chatgpt_text(novella_prompt)
         print("Generated novella scenario:")
         print(novella_text)
         print("\n" + "=" * 80 + "\n")
         
         # Step 2: Divide the scenario into key scenes.
-        count_scenes = 6  # Expected number of scenes
+        count_scenes = NUMBER_OF_THE_SCENES  # Expected number of scenes
         frames_prompt = (
             f"Divide the following text into {count_scenes} iconic and striking scenes. "
             "Each frame should have a minimalist style with vivid comic-style visuals. "
