@@ -51,6 +51,15 @@ ASSISTANT_MESSAGE = "Audio output generated. The transcript of the audio is prov
 # Number of scenes to generate
 NUMBER_OF_THE_SCENES = 6
 
+# Template for frames prompt
+FRAMES_PROMPT_TEMPLATE = (
+    "Divide the following text into {count_scenes} iconic and striking scenes. "
+    "Each frame should have a minimalist style with vivid comic-style visuals. "
+    "For each scene, create a brief description (up to 50 words) that conveys the atmosphere, visual details, and mood.\n\n"
+    "Text: {novella_text}\n"
+    "Add a General description of the environment as the fifth scene for creating a drawing, up to 100 words long."
+)
+
 #
 # Testing features
 #

@@ -4,6 +4,7 @@ from services.video_service import VideoEditor
 from services.chat_service import ChatService
 from services.image_service import ImageService
 from config import (
+    FRAMES_PROMPT_TEMPLATE,
     DEFAULT_IMAGES_OUTPUT_DIR, 
     VOICE_FILE_PATH, 
     VIDEO_FILE_PATH, 
@@ -30,13 +31,7 @@ class Video:
         
         # Step 2: Divide the scenario into key scenes.
         count_scenes = NUMBER_OF_THE_SCENES  # Expected number of scenes
-        frames_prompt = (
-            f"Divide the following text into {count_scenes} iconic and striking scenes. "
-            "Each frame should have a minimalist style with vivid comic-style visuals. "
-            "For each scene, create a brief description (up to 50 words) that conveys the atmosphere, visual details, and mood.\n\n"
-            f"Text: {novella_text}\n"
-            "Add a General description of the environment as the fifth scene for creating a drawing, up to 100 words long."
-        )
+        frames_prompt = FRAMES_PROMPT_TEMPLATE.format(count_scenes=count_scenes, novella_text=novella_text)
         frames_text = self.chat_service.generate_chatgpt_text(frames_prompt, max_tokens=count_scenes * 100 + 200)
 
         print("Generated scene descriptions:")
@@ -85,4 +80,3 @@ class Video:
 
         print("All stages completed successfully!")
         print(f"Final video saved at: {VIDEO_FILE_PATH}")
-
