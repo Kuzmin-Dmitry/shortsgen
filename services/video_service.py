@@ -2,17 +2,25 @@
 Module for creating the final video from images and an audio track.
 Uses MoviePy to compile clips and add effects.
 """
-
 import os
-from moviepy import *
 import random
-from moviepy.video.fx import Crop, FadeIn, FadeOut
-from PIL import Image
-import numpy as np
-from moviepy import ImageClip
-from moviepy.video.VideoClip import VideoClip
 import textwrap
-from moviepy import TextClip, concatenate_videoclips, ColorClip
+
+import numpy as np
+from PIL import Image
+
+from moviepy import (
+    AudioFileClip,
+    CompositeVideoClip,
+    ImageClip,
+    TextClip,
+    concatenate_videoclips,
+    ColorClip,
+    VideoClip,
+)
+
+from moviepy.video.fx import Crop, FadeIn, FadeOut
+
 from config import (
     CHUNK_SIZE,
     FONTSIZE,
