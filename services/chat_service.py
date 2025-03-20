@@ -3,14 +3,34 @@ Module for generating text using the ChatGPT API.
 """
 
 from openai import OpenAI
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, LOCAL_TEXT_TO_TEXT_MODEL
+import requests
 
 class ChatService:   
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-    def generate_chatgpt_text(self, prompt, max_tokens=300):
+
+    def generate_chatgpt_text_gemma3(self, prompt, max_tokens=300):
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": LOCAL_TEXT_TO_TEXT_MODEL,
+                "prompt": prompt,
+                "stream": False,  # Set to True for streaming response
+                "options": {
+                    "temperature": 0.7,
+                    "max_tokens": max_tokens,
+                    "top_p": 0.9,
+                    "num_ctx": 4096  # Context window size
+                }
+            }
+        )
+        print(response.json()["response"]) 
+        return response.json()["response"]
+    
+    def generate_chatgpt_text_openai(self, prompt, max_tokens=300):
         """
         Generates text response using the ChatGPT API based on the provided prompt.
         Returns a list containing the generated texts.
