@@ -1,7 +1,10 @@
 # config.py
 
+import logging
+import logging.config
 import os
 from dotenv import load_dotenv
+from utils.logger import LoggerConfigurator
 
 load_dotenv()
 
@@ -90,3 +93,7 @@ CHUNK_SIZE = 25
 
 # Font size for text on a picture   
 FONTSIZE = 20
+
+# Configure logging
+logger_configurator = LoggerConfigurator()
+logger = logger_configurator.get_logger()
