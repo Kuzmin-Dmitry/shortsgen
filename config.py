@@ -25,6 +25,8 @@ DALLE_MODEL = "dall-e-2"
 
 # Имя модели, используемой для генерации аудио
 OPENAI_MODEL = "gpt-4o-audio-preview"
+LOCAL_TEXT_TO_TEXT_MODEL = "gemma3:12b"
+LOCAL = False  # Working with local models: "run ollama serve"
 
 # Настройки для аудио: голос и формат
 AUDIO_CONFIG = {
@@ -65,7 +67,6 @@ FRAMES_PROMPT_TEMPLATE = (
 #
 TEST_AUDIO = True  # Skip audio generation if voice.mp3 exists
 TEST_IMAGES = True  # Skip images generation if exist
-
 #
 # FOR UI:
 #
