@@ -27,7 +27,8 @@ class ChatService:
                 }
             }
         )
-        print(response.json()["response"]) 
+        print(response.strip())
+        print(f"Type of response: {type(response)}")
         return response.json()["response"]
     
     def generate_chatgpt_text_openai(self, prompt, max_tokens=300):
@@ -49,4 +50,7 @@ class ChatService:
         # Clean and store the generated text.
         response = response.choices[0].message.content.strip()
         print("Received response from ChatGPT.")  # Confirm that response have been collected.
+        print(response.strip())
+        print(f"Type of response: {type(response)}")
+        
         return response
