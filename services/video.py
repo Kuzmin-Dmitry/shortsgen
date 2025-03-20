@@ -11,7 +11,8 @@ from config import (
     DEFAULT_VOICE_OUTPUT_DIR, 
     DEFAULT_VIDEO_OUTPUT_DIR,
     NOVELLA_PROMPT,
-    NUMBER_OF_THE_SCENES
+    NUMBER_OF_THE_SCENES,
+    LOCAL
 )
 
 class Video:
@@ -24,7 +25,10 @@ class Video:
     def generate(self):
         # Step 1: Generate a mini-novel scenario using ChatGPT.
         novella_prompt = NOVELLA_PROMPT
-        novella_text = self.chat_service.generate_chatgpt_text(novella_prompt)
+        if LOCAL:
+            novella_text = self.chat_service.generate_chatgpt_text_gemma3(novella_prompt)
+        else:   
+            novella_text = self.chat_service.generate_chatgpt_text_openai(novella_prompt)
         print("Generated novella scenario:")
         print(novella_text)
         print("\n" + "=" * 80 + "\n")
@@ -32,7 +36,10 @@ class Video:
         # Step 2: Divide the scenario into key scenes.
         count_scenes = NUMBER_OF_THE_SCENES  # Expected number of scenes
         frames_prompt = FRAMES_PROMPT_TEMPLATE.format(count_scenes=count_scenes, novella_text=novella_text)
-        frames_text = self.chat_service.generate_chatgpt_text(frames_prompt, max_tokens=count_scenes * 100 + 200)
+        if LOCAL:
+            frames_text = self.chat_service.generate_chatgpt_text_gemma3(frames_prompt, max_tokens=count_scenes * 100 + 200)
+        else:
+            frames_text = self.chat_service.generate_chatgpt_text_openai(frames_prompt, max_tokens=count_scenes * 100 + 200)
 
         print("Generated scene descriptions:")
         print(frames_text)
@@ -49,7 +56,10 @@ class Video:
                 "conveying the full grim aesthetics of noir. "
                 "Focus on the visual details and mood, using the text as general context."
             )
-            image_prompt = self.chat_service.generate_chatgpt_text(prompt_for_image, max_tokens=100)
+            if LOCAL:
+                image_prompt = self.chat_service.generate_chatgpt_text_gemma3(prompt_for_image, max_tokens=100)
+            else:   
+                image_prompt = self.chat_service.generate_chatgpt_text_openai(prompt_for_image, max_tokens=100)
 
             print(f"Generating image for prompt: {image_prompt}")
             image_filename = f"image_{scene}.jpg"
