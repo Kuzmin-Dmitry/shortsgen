@@ -31,7 +31,7 @@ class Video:
         logger.info("Starting video generation process")  # Общее сообщение о начале процесса
         # Step 1: Generate a mini-novel scenario using ChatGPT.
         novella_prompt = NOVELLA_PROMPT
-        logger.debug(f"Using novella prompt: {novella_prompt}")  # Логирование используемого промпта
+        logger.debug(f"Using novella prompt: {novella_prompt[:40] + "..."}")  # Логирование используемого промпта
         if LOCAL:
             logger.info("Generating novella text using local Gemma model")
             novella_text = self.chat_service.generate_chatgpt_text_gemma3(novella_prompt)
@@ -39,8 +39,7 @@ class Video:
             logger.info("Generating novella text using OpenAI model")
             novella_text = self.chat_service.generate_chatgpt_text_openai(novella_prompt)
         logger.info("Generated novella scenario:")
-        logger.info(novella_text)
-        logger.info("\n" + "=" * 80 + "\n")
+        logger.info(novella_text[:40] + "...")
         
         # Step 2: Divide the scenario into key scenes.
         count_scenes = NUMBER_OF_THE_SCENES  # Expected number of scenes
@@ -55,35 +54,36 @@ class Video:
             frames_text = self.chat_service.generate_chatgpt_text_openai(frames_prompt, max_tokens=count_scenes * 100 + 200)
 
         logger.info("Generated scene descriptions:")
-        logger.info(frames_text)
-        logger.info("\n" + "=" * 80 + "\n")
+        logger.info(frames_text[:40] + "...")
 
         logger.info(f"Checking/creating directory: {DEFAULT_IMAGES_OUTPUT_DIR}")
         os.makedirs(DEFAULT_IMAGES_OUTPUT_DIR, exist_ok=True)
 
         # Step 3: Generate images for each scene.
         for scene in range(1, count_scenes + 1):
-            logger.info(f"Generating image for scene {scene}")  # Логирование номера текущей сцены
+            logger.info(f"Type of response: {type(scene)}")
+            logger.info(f"Generating image for scene: {scene}")  # Логирование номера текущей сцены
             prompt_for_image = (
                 f"Visually define and describe the scene number \"{scene}\" in the text: \"{frames_text}\". "
                 f"Create a brief, vivid, and atmospheric prompt (up to 50 words) for image generation for scene \"{scene}\" "
                 "conveying the full grim aesthetics of noir. "
                 "Focus on the visual details and mood, using the text as general context."
             )
-            logger.debug(f"Using prompt for image scene {scene}: {prompt_for_image}")  # Логирование промпта для изображения
+            scene
+            logger.debug(f"Using prompt for image scene {scene}: {prompt_for_image[:40]}")  # Логирование промпта для изображения
             if LOCAL:
-                logger.info(f"Generating image prompt for scene {scene} using local Gemma model")
+                logger.info(f"[local][gemma] Generating image prompt for scene {scene}")
                 image_prompt = self.chat_service.generate_chatgpt_text_gemma3(prompt_for_image, max_tokens=100)
             else:   
-                logger.info(f"Generating image prompt for scene {scene} using OpenAI model")
+                logger.info(f"[cloud][openai] Generating image prompt for scene {scene}")
                 image_prompt = self.chat_service.generate_chatgpt_text_openai(prompt_for_image, max_tokens=100)
 
-            logger.info(f"Generating image for prompt: {image_prompt}")
+            logger.info(f"Generating image for prompt: {image_prompt[:40] + "..."}")
             image_filename = f"image_{scene}.jpg"
             logger.debug(f"Saving image as: {image_filename}")  # Логирование имени файла
             image_gen_result = self.image_service.generate_image(image_prompt, DEFAULT_IMAGES_OUTPUT_DIR, image_filename)
             if not image_gen_result:
-                logger.error(f"Error: Image generation failed for scene {scene}. Exiting.")
+                logger.error(f"Error: Image generation failed for scene {scene[:40] + "..."}. Exiting.")
                 return
 
         # Step 5: Generate audio narration for the entire novella scenario.

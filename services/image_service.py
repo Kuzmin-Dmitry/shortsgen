@@ -79,7 +79,8 @@ class ImageService:
         """
         Processes a single prompt with TEST_VIDEO check.
         """
-        logger.info(f"Processing prompt: {prompt}")
+        logger.info(logger.info(f"Type of prompt: {type(prompt)}"))
+        logger.info(f"Processing prompt: {prompt[:40]+ "..."}")
         try:
             #sanitized_output_dir = self.sanitize_filename(output_dir)
             sanitized_image_filename = self.sanitize_filename(image_filename)
