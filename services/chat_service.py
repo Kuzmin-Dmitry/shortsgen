@@ -4,15 +4,23 @@ Module for generating text using the ChatGPT API.
 
 from openai import OpenAI
 from config import OPENAI_API_KEY, LOCAL_TEXT_TO_TEXT_MODEL
+import logging
 import requests
+
+logger = logging.getLogger(__name__)
 
 class ChatService:   
     def __init__(self):
+        logger.debug("Initializing text generation class")  # Отладочное сообщение при инициализации класса
         self.client = OpenAI(api_key=OPENAI_API_KEY)
+        logger.debug("Closed text generation class initialized")
+
 
 
 
     def generate_chatgpt_text_gemma3(self, prompt, max_tokens=300):
+        logger.info(f"Sending request to ChatGPT: {prompt[:40] + "..."}") 
+        
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
@@ -27,8 +35,8 @@ class ChatService:
                 }
             }
         )
-        print(response.strip())
-        print(f"Type of response: {type(response)}")
+        logger.info(response.strip())
+        logger.info(f"Type of response: {type(response)}")
         return response.json()["response"]
     
     def generate_chatgpt_text_openai(self, prompt, max_tokens=300):
@@ -36,7 +44,7 @@ class ChatService:
         Generates text response using the ChatGPT API based on the provided prompt.
         Returns a list containing the generated texts.
         """
-        print(f"Sending request to ChatGPT: {prompt}")  # Log the outgoing prompt.
+        logger.info(f"Sending request to ChatGPT: {prompt[:40] + "..."}")  # Log the outgoing prompt.
         # Request a text completion from ChatGPT.
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",  # The model identifier can be customized as needed.
@@ -49,8 +57,8 @@ class ChatService:
         )
         # Clean and store the generated text.
         response = response.choices[0].message.content.strip()
-        print("Received response from ChatGPT.")  # Confirm that response have been collected.
-        print(response.strip())
-        print(f"Type of response: {type(response)}")
+        logger.info("Received response from ChatGPT.")  # Confirm that response have been collected.
+        logger.info(response.strip()[:40] + "...")
+        logger.info(f"Type of response: {type(response)}")
         
         return response
