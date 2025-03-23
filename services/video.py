@@ -43,14 +43,12 @@ class Video:
         if not self._generate_scene_images(frames_text):
             return False
             
-        if not self._generate_audio_narration(novella_text):
+        if not self._generate_voice_from_text(novella_text):
             return False
             
-        if not self._create_final_video(novella_text):
+        if not self._compose_video_with_audio(novella_text):
             return False
             
-        logger.info(f"Final video saved at: {VIDEO_FILE_PATH}")
-        logger.info("Ending video generation process")
         return True
     
     def _execute_operation(self, operation_func, operation_name, preview_length=40):
@@ -81,12 +79,9 @@ class Video:
             novella_prompt = NOVELLA_PROMPT
             logger.debug(f"Using novella prompt: {novella_prompt[:40] + '...'}")
             
-            if LOCAL:
-                logger.info("Generating novella text using local Gemma model")
-                return self.chat_service.generate_chatgpt_text_gemma3(novella_prompt)
-            else:   
-                logger.info("Generating novella text using OpenAI model")
-                return self.chat_service.generate_chatgpt_text_openai(novella_prompt)
+            # Use unified interface
+            logger.info(f"Generating novella text using {'local Gemma' if LOCAL else 'OpenAI'} model")
+            return self.chat_service.generate_text(novella_prompt)
                 
         return self._execute_operation(operation, "novella text generation")
     
@@ -98,16 +93,12 @@ class Video:
             frames_prompt = FRAMES_PROMPT_TEMPLATE.format(count_scenes=count_scenes, novella_text=novella_text)
             logger.debug(f"Using frames prompt: {frames_prompt}")
             
-            if LOCAL:
-                logger.info("Generating frames text using local Gemma model")
-                return self.chat_service.generate_chatgpt_text_gemma3(
-                    frames_prompt, max_tokens=count_scenes * 100 + 200
-                )
-            else:
-                logger.info("Generating frames text using OpenAI model")
-                return self.chat_service.generate_chatgpt_text_openai(
-                    frames_prompt, max_tokens=count_scenes * 100 + 200
-                )
+            # Use unified interface
+            logger.info(f"Generating frames text using {'local Gemma' if LOCAL else 'OpenAI'} model")
+            return self.chat_service.generate_text(
+                frames_prompt, 
+                max_tokens=count_scenes * 100 + 200
+            )
         
         return self._execute_operation(operation, "scene descriptions")
     
@@ -128,12 +119,9 @@ class Video:
                 )
                 
                 logger.debug(f"Using prompt for image scene {scene}: {prompt_for_image[:40]}")
-                if LOCAL:
-                    logger.info(f"[local][gemma] Generating image prompt for scene {scene}")
-                    image_prompt = self.chat_service.generate_chatgpt_text_gemma3(prompt_for_image, max_tokens=100)
-                else:   
-                    logger.info(f"[cloud][openai] Generating image prompt for scene {scene}")
-                    image_prompt = self.chat_service.generate_chatgpt_text_openai(prompt_for_image, max_tokens=100)
+                # Use unified interface
+                logger.info(f"Generating image prompt for scene {scene}")
+                image_prompt = self.chat_service.generate_text(prompt_for_image, max_tokens=100)
 
                 logger.info(f"Generating image for prompt: {image_prompt[:40] + '...'}")
                 image_filename = f"image_{scene}.jpg"
@@ -147,7 +135,7 @@ class Video:
         
         return self._execute_operation(operation, "scene image generation")
     
-    def _generate_audio_narration(self, novella_text):
+    def _generate_voice_from_text(self, novella_text):
         """Генерация аудионарратива для всей новеллы"""
         def operation():
             logger.info(f"Checking/creating directory: {DEFAULT_VOICE_OUTPUT_DIR}")
@@ -160,7 +148,7 @@ class Video:
         
         return self._execute_operation(operation, "audio narration generation")
     
-    def _create_final_video(self, novella_text):
+    def _compose_video_with_audio(self, novella_text):
         """Создание финального видео, объединяющего изображения и аудио"""
         def operation():
             logger.info(f"Checking/creating directory: {DEFAULT_VIDEO_OUTPUT_DIR}")
