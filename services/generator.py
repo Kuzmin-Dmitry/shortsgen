@@ -18,14 +18,14 @@ from config import (
 
 logger = logging.getLogger(__name__)
 
-class Video:
+class Generator:
     def __init__(self):
-        logger.debug("Initializing Video class")
+        logger.debug("Initializing Generator class")
         self.audio_service = AudioService()
         self.chat_service = ChatService()
         self.image_service = ImageService()
         self.video_editor = VideoEditor()
-        logger.debug("Video class initialized")
+        logger.debug("Generator class initialized")
 
     def generate(self):
         """Main method coordinating the video creation process"""
@@ -162,7 +162,7 @@ class Video:
                 novella_text, 
                 apply_fades=False
             )
-            logger.info("Video created successfully")
+            logger.info("Generator created successfully")
             return True
         
         return self._execute_operation(operation, "final video creation")

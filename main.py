@@ -1,5 +1,5 @@
-from services.video import Video
+from services.generator import Generator
 
 if __name__ == "__main__":
-    video = Video()
-    video.generate()
+    generator = Generator()
+    generator.generate()
