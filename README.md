@@ -1,23 +1,23 @@
 # Creative Video Generator
 
-Это проект для генерации креативного видео с использованием OpenAI API, MoviePy и других библиотек. Проект разделён на модули, чтобы легко поддерживать и расширять функциональность.
+This is a project for generating creative videos using OpenAI API, MoviePy and other libraries. The project is divided into modules to easily maintain and extend functionality.
 
-## Структура проекта
+## Project Structure
 
-- **config.py**: Конфигурация и API-ключи.
-- **main.py**: Основной скрипт запуска.
-- **services/**: Модули с бизнес-логикой для генерации текста, изображений, аудио и видео.
-- **utils/**: Вспомогательные функции.
+- **config.py**: Configuration and API keys.
+- **main.py**: Main launch script.
+- **services/**: Modules with business logic for generating text, images, audio, and video.
+- **utils/**: Helper functions.
 
-## Установка зависимостей
+## Installing Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Архитектура проекта
+## Project Architecture
 
-### Диаграмма компонентов
+### Component Diagram
 
 ```mermaid
 graph TD
@@ -37,7 +37,7 @@ graph TD
     L[utils] --> B
 ```
 
-### Процесс генерации видео
+### Video Generation Process
 
 ```mermaid
 sequenceDiagram
@@ -66,7 +66,7 @@ sequenceDiagram
     Video-->>User: final_video
 ```
 
-### Структура классов
+### Class Structure
 
 ```mermaid
 classDiagram
@@ -110,67 +110,67 @@ classDiagram
     Video --> VideoEditor
 ```
 
-### Поток данных
+### Data Flow
 
 ```
 +----------------+     +----------------+     +----------------+
-| Текстовый      |     | Изображения    |     | Аудио          |
-| сценарий       | --> | для сцен       | --> | нарратив       | 
+| Text           |     | Images         |     | Audio          |
+| script         | --> | for scenes     | --> | narrative      | 
 | (novella_text) |     | (scene images) |     | (audio file)   |
 +----------------+     +----------------+     +----------------+
                                                       |
                                                       v
                                             +----------------+
-                                            | Финальное      |
-                                            | видео          |
+                                            | Final          |
+                                            | video          |
                                             | (final video)  |
                                             +----------------+
 ```
 
-### Таблица зависимостей
+### Dependencies Table
 
-| Библиотека | Версия | Назначение |
+| Library | Version | Purpose |
 |------------|--------|------------|
-| request | 2.31.0 | HTTP-запросы к API |
-| moviepy | 1.0.3 | Обработка и создание видео |
-| numpy | 1.25.2 | Работа с массивами данных |
-| openai | 0.28.0 | Взаимодействие с OpenAI API |
-| python-dotenv | 1.0.0 | Загрузка переменных окружения |
+| request | 2.31.0 | HTTP requests to API |
+| moviepy | 1.0.3 | Processing and creating videos |
+| numpy | 1.25.2 | Working with data arrays |
+| openai | 0.28.0 | Interaction with OpenAI API |
+| python-dotenv | 1.0.0 | Loading environment variables |
 
-### Дерево директорий
+### Directory Tree
 
 ```
 c:\git\shortsgen\
 │
-├── main.py                # Основная точка входа
-├── config.py              # Конфигурация проекта
-├── requirements.txt       # Зависимости проекта
-├── README.md              # Документация
+├── main.py                # Main entry point
+├── config.py              # Project configuration
+├── requirements.txt       # Project dependencies
+├── README.md              # Documentation
 │
-├── services\              # Модули сервисов
+├── services\              # Service modules
 │   ├── __init__.py
-│   ├── audio_service.py   # Генерация аудио
-│   ├── chat_service.py    # Генерация текста
-│   ├── image_service.py   # Генерация изображений
-│   ├── video.py           # Основной видео-процесс
-│   └── video_service.py   # Редактирование видео
+│   ├── audio_service.py   # Audio generation
+│   ├── chat_service.py    # Text generation
+│   ├── image_service.py   # Image generation
+│   ├── video.py           # Main video process
+│   └── video_service.py   # Video editing
 │
-└── utils\                 # Вспомогательные утилиты
+└── utils\                 # Utility tools
     ├── __init__.py
-    ├── file_utils.py      # Работа с файлами
-    └── logger.py          # Логирование
+    ├── file_utils.py      # File operations
+    └── logger.py          # Logging
 ```
 
-### Таблица конфигурационных параметров
+### Configuration Parameters Table
 
-| Параметр | Тип | Описание |
+| Parameter | Type | Description |
 |----------|-----|----------|
-| DEEPAI_API_KEY | string | API ключ для DeepAI |
-| OPENAI_API_KEY | string | API ключ для OpenAI |
-| DEFAULT_IMAGE_SIZE | string | Размер изображения по умолчанию |
-| DEFAULT_OUTPUT_DIR | string | Путь к директории вывода |
-| DALLE_MODEL | string | Модель DALL-E для генерации изображений |
-| OPENAI_MODEL | string | Модель OpenAI для генерации аудио |
-| LOCAL_TEXT_TO_TEXT_MODEL | string | Локальная модель для генерации текста |
-| LOCAL | boolean | Флаг использования локальных моделей |
-| NUMBER_OF_THE_SCENES | int | Количество сцен для генерации |
+| DEEPAI_API_KEY | string | API key for DeepAI |
+| OPENAI_API_KEY | string | API key for OpenAI |
+| DEFAULT_IMAGE_SIZE | string | Default image size |
+| DEFAULT_OUTPUT_DIR | string | Path to output directory |
+| DALLE_MODEL | string | DALL-E model for image generation |
+| OPENAI_MODEL | string | OpenAI model for audio generation |
+| LOCAL_TEXT_TO_TEXT_MODEL | string | Local model for text generation |
+| LOCAL | boolean | Flag for using local models |
+| NUMBER_OF_THE_SCENES | int | Number of scenes to generate |

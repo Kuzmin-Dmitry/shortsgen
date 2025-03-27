@@ -28,10 +28,10 @@ class Video:
         logger.debug("Video class initialized")
 
     def generate(self):
-        """Основной метод, координирующий процесс создания видео"""
+        """Main method coordinating the video creation process"""
         logger.info("Starting video generation process")
         
-        # Последовательное выполнение всех этапов создания видео
+        # Sequential execution of all video creation stages
         novella_text = self._generate_novella_text()
         if not novella_text:
             return False
@@ -53,15 +53,15 @@ class Video:
     
     def _execute_operation(self, operation_func, operation_name, preview_length=40):
         """
-        Выполняет операцию с обработкой ошибок и логированием результата
+        Executes an operation with error handling and result logging
         
         Args:
-            operation_func: Функция, выполняющая операцию
-            operation_name: Название операции для логирования
-            preview_length: Длина предпросмотра результата
+            operation_func: Function performing the operation
+            operation_name: Operation name for logging
+            preview_length: Length of result preview
             
         Returns:
-            Результат выполнения operation_func или None в случае ошибки
+            Result of operation_func execution or None in case of error
         """
         try:
             result = operation_func()
@@ -74,7 +74,7 @@ class Video:
             return None
     
     def _generate_novella_text(self):
-        """Генерация текста мини-новеллы"""
+        """Generation of mini-novella text"""
         def operation():
             novella_prompt = NOVELLA_PROMPT
             logger.debug(f"Using novella prompt: {novella_prompt[:40] + '...'}")
@@ -86,7 +86,7 @@ class Video:
         return self._execute_operation(operation, "novella text generation")
     
     def _generate_scene_descriptions(self, novella_text):
-        """Разделение новеллы на ключевые сцены"""
+        """Dividing the novella into key scenes"""
         def operation():
             count_scenes = NUMBER_OF_THE_SCENES
             logger.debug(f"Dividing novella into {count_scenes} scenes")
@@ -103,7 +103,7 @@ class Video:
         return self._execute_operation(operation, "scene descriptions")
     
     def _generate_scene_images(self, frames_text):
-        """Генерация изображений для каждой сцены"""
+        """Generation of images for each scene"""
         def operation():
             count_scenes = NUMBER_OF_THE_SCENES
             logger.info(f"Checking/creating directory: {DEFAULT_IMAGES_OUTPUT_DIR}")
@@ -136,7 +136,7 @@ class Video:
         return self._execute_operation(operation, "scene image generation")
     
     def _generate_voice_from_text(self, novella_text):
-        """Генерация аудионарратива для всей новеллы"""
+        """Generation of audio narrative for the entire novella"""
         def operation():
             logger.info(f"Checking/creating directory: {DEFAULT_VOICE_OUTPUT_DIR}")
             os.makedirs(DEFAULT_VOICE_OUTPUT_DIR, exist_ok=True)
@@ -149,7 +149,7 @@ class Video:
         return self._execute_operation(operation, "audio narration generation")
     
     def _compose_video_with_audio(self, novella_text):
-        """Создание финального видео, объединяющего изображения и аудио"""
+        """Creation of the final video combining images and audio"""
         def operation():
             logger.info(f"Checking/creating directory: {DEFAULT_VIDEO_OUTPUT_DIR}")
             os.makedirs(DEFAULT_VIDEO_OUTPUT_DIR, exist_ok=True)

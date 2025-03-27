@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ChatService:   
     def __init__(self):
-        logger.debug("Initializing text generation class")  # Отладочное сообщение при инициализации класса
+        logger.debug("Initializing text generation class")  # Debug message when initializing the class
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         logger.debug("Closed text generation class initialized")
 
