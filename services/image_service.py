@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class ImageService:
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
+        logger.info(f"ImageService initialized with DALL-E model: {DALLE_MODEL}, test_mode: {TEST_IMAGES}")
 
     def generate_image_url(self, prompt: str, size: str = DEFAULT_IMAGE_SIZE, dalle_model=DALLE_MODEL) -> str:
         """
@@ -28,6 +29,10 @@ class ImageService:
         Returns:
             The URL of the generated image, or None if no URL could be retrieved.
         """
+        prompt_truncated = prompt[:30] + "..." if len(prompt) > 30 else prompt
+        logger.info(f"Generating image with DALL-E model: {dalle_model}, size: {size}")
+        logger.debug(f"Image prompt: {prompt_truncated}")
+        
         try:
             response = self.client.images.generate(
                 model=dalle_model,
@@ -36,9 +41,16 @@ class ImageService:
                 size=size
             )
             image_url = response.data[0].url if response.data else None
-            return image_url
+            
+            if image_url:
+                logger.info("Image URL successfully generated")
+                logger.debug(f"Image URL: {image_url[:50]}...")
+                return image_url
+            else:
+                logger.warning("No image URL returned from DALL-E API")
+                return None
         except Exception as e:
-            logger.error(f"Error generating image URL: {e}", exc_info=True)
+            logger.error(f"Error generating image URL: {str(e)}", exc_info=True)
             return None
 
     def download_image(self, image_url: str, output_path: str) -> bool:
@@ -52,15 +64,18 @@ class ImageService:
         Returns:
             True if the image was successfully saved, otherwise False.
         """
+        logger.info(f"Downloading image to {output_path}")
+        
         try:
-            logger.info(f"Downloading image from URL: {image_url}")
             img_data = requests.get(image_url).content
             with open(output_path, "wb") as f:
                 f.write(img_data)
-            logger.info(f"Image saved: {output_path}")
+                
+            file_size_kb = os.path.getsize(output_path) / 1024
+            logger.info(f"Image downloaded successfully ({file_size_kb:.2f} KB)")
             return True
         except Exception as e:
-            logger.error(f"Download error: {e}", exc_info=True)
+            logger.error(f"Error downloading image: {str(e)}", exc_info=True)
             return False
 
     def sanitize_filename(self, filename: str) -> str:
@@ -73,45 +88,56 @@ class ImageService:
         Returns:
             A sanitized string that can be used as a filename.
         """
-        return re.sub(r'[\\/*?:"<>|]', "", filename)
+        sanitized = re.sub(r'[\\/*?:"<>|]', "", filename)
+        if sanitized != filename:
+            logger.debug(f"Filename sanitized: '{filename}' -> '{sanitized}'")
+        return sanitized
 
     def process_prompt(self, prompt: str, output_dir: str, image_filename: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
         """
         Processes a single prompt with TEST_VIDEO check.
         """
-        logger.info(logger.info(f"Type of prompt: {type(prompt)}"))
-        logger.info(f"Processing prompt: {prompt[:40]+ "..."}")
         try:
-            #sanitized_output_dir = self.sanitize_filename(output_dir)
             sanitized_image_filename = self.sanitize_filename(image_filename)
             output_path = os.path.join(DEFAULT_IMAGES_OUTPUT_DIR, sanitized_image_filename)
+            logger.debug(f"Processing prompt for image: {sanitized_image_filename}")
             
             # TEST_IMAGES check
             if TEST_IMAGES and os.path.isfile(output_path):
-                logger.info(f"TEST_VIDEO: Using existing image at {output_path}")
+                logger.info(f"Using existing image: {output_path} [TEST_MODE]")
                 return True
                 
             image_url = self.generate_image_url(prompt, size)
             if not image_url:
-                logger.warning("Failed to get image URL")
+                logger.error("Failed to generate image URL")
                 return False
                 
             return self.download_image(image_url, output_path)
         except Exception as e:
-            logger.error(f"Processing error: {e}", exc_info=True)
+            logger.error(f"Error processing image prompt: {str(e)}", exc_info=True)
             return False
 
     def generate_image(self, prompt: str, output_dir: str, image_filename: str, size: str = DEFAULT_IMAGE_SIZE) -> bool:
         """
         Generates an image with TEST_VIDEO awareness.
         """
+        logger.info(f"Generating image: {image_filename}")
+        
         # Create output directory if it doesn't exist
         sanitized_output_dir = DEFAULT_IMAGES_OUTPUT_DIR
         os.makedirs(sanitized_output_dir, exist_ok=True)
+        logger.debug(f"Ensuring output directory exists: {sanitized_output_dir}")
         
-        return self.process_prompt(
+        result = self.process_prompt(
             prompt=prompt,
             output_dir=sanitized_output_dir,
             image_filename=image_filename,
             size=size
         )
+        
+        if result:
+            logger.info(f"Image {image_filename} generated successfully")
+        else:
+            logger.error(f"Failed to generate image {image_filename}")
+            
+        return result
