@@ -26,18 +26,18 @@ VIDEO_FILE_PATH = os.path.join(DEFAULT_VIDEO_OUTPUT_DIR, "video.mp4")
 # DALLE_MODEL = "dall-e-3"
 DALLE_MODEL = "dall-e-2"
 
-# Имя модели, используемой для генерации аудио
+# Name of the model used for audio generation
 OPENAI_MODEL = "gpt-4o-audio-preview"
 LOCAL_TEXT_TO_TEXT_MODEL = "gemma3:12b"
 LOCAL = False  # Working with local models: "run ollama serve"
 
-# Настройки для аудио: голос и формат
+# Audio settings: voice and format
 AUDIO_CONFIG = {
     "voice": "nova",
     "format": "mp3"
 }
 
-# Системное сообщение для установки стиля аудио (настраиваемый шаблон)
+# System message for setting audio style (customizable template)
 SYSTEM_PROMPT = (
     "You are a highly skilled audio assistant capable of transforming text into vivid, emotionally charged audio. "
     "Maintain a voice pitch between 180–230 Hz and a dynamic range that spans from a soft whisper to powerful delivery, "
@@ -50,7 +50,7 @@ SYSTEM_PROMPT = (
 
 USER_PROMPT = "Please narrate the following text with maximum clarity and emotion, but really quickly: «{text}»"
 
-# Сообщение подтверждения (вынесено для возможной интернационализации)
+# Confirmation message (externalized for possible internationalization)
 ASSISTANT_MESSAGE = "Audio output generated. The transcript of the audio is provided below."
 
 # Number of scenes to generate
@@ -82,13 +82,13 @@ NOVELLA_PROMPT = (
     "The characters, composed of cold-blooded resolve and daring courage, speak in the language of zoomers and alphas, "
     "where memes are a means of communication and everything around is a game of manipulation. "
     "Add unexpected twists and sharp phrases so that every line makes you think: "
-    "\"Oh, this isn’t trash and isn’t suffocating! Like and subscribe, damn it!\"."
+    "\"Oh, this isn't trash and isn't suffocating! Like and subscribe, damn it!\"."
 )
 
-#For Text on a picture
+# For Text on a picture
 HORIZONTAL_SIZE = 256
 
-#Amount of words in a chunk
+# Amount of words in a chunk
 CHUNK_SIZE = 25
 
 # Font size for text on a picture   
