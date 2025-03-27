@@ -151,12 +151,12 @@ class VideoEditor:
         clips = [
             TextClip(
                 text=chunk,
-                font=font_path,  # Обязательный параметр!
+                font=font_path,  # Required parameter!
                 font_size=fontsize,
                 color=color,
                 bg_color=bg_color,
-                size=size,  # Исправлено: размер должен соответствовать видео
-                method='label'  # Оптимальный метод рендеринга
+                size=size,  # Fixed: size should match the video
+                method='label'  # Optimal rendering method
             ).with_duration(chunk_duration)
             for chunk in chunks
         ]
@@ -176,12 +176,12 @@ class VideoEditor:
     #     clips = [
     #         TextClip(
     #             text=chunk,
-    #             font=font_path,  # Обязательный параметр!
+    #             font=font_path,  # Required parameter!
     #             font_size=fontsize,
     #             color=color,
     #             bg_color=bg_color,
-    #             size=size,  # Исправлено: размер должен соответствовать видео
-    #             method='label'  # Оптимальный метод рендеринга
+    #             size=size,  # Fixed: size should match the video
+    #             method='label'  # Optimal rendering method
     #         ).with_duration(chunk_duration)
     #         for chunk in chunks
     #     ]
