@@ -14,7 +14,7 @@ class ChatService:
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         logger.info("ChatService initialized with OpenAI client")
 
-    def generate_text(self, prompt, max_tokens=300, model=None, temperature=0.8):
+    def generate_text(self, prompt, max_tokens=300, model="openai", temperature=0.8):
         """
         Unified interface for text generation using different models.
         
@@ -32,7 +32,7 @@ class ChatService:
         logger.debug(f"Prompt: {prompt_truncated}")
         
         try:
-            if model == "gemma" or (model is None):
+            if model == "gemma":
                 result = self._generate_chatgpt_text_gemma3(prompt, max_tokens, temperature)
             else:
                 result = self._generate_chatgpt_text_openai(prompt, max_tokens, temperature)

@@ -15,6 +15,39 @@ This is a project for generating creative videos using OpenAI API, MoviePy and o
 pip install -r requirements.txt
 ```
 
+## Docker Support
+
+### Prerequisites
+- Docker installed on your system
+- API keys for OpenAI and DeepAI services
+
+### Building the Docker Image
+```bash
+docker build -t shortsgen .
+```
+
+### Running the Container
+Create a `.env` file with your API keys:
+```
+OPENAI_API_KEY=your_openai_key
+DEFAULT_OUTPUT_DIR=/app/output
+```
+
+Run the container:
+
+For PowerShell in Windows Terminal:
+```powershell
+docker run --rm `
+    --env-file .env `
+    -v .\output:/app/output `
+    shortsgen
+```
+
+This command:
+- Uses your environment variables from `.env`
+- Mounts the local `output` directory to the container's output directory
+- Removes the container after execution
+
 ## Project Architecture
 
 ### Component Diagram

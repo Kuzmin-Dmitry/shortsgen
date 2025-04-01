@@ -194,7 +194,7 @@ class VideoEditor:
             raise
 
     def create_text_video(self, text, duration, chunk_size=CHUNK_SIZE, fontsize=FONTSIZE, color='white', 
-                        bg_color='black', size=(HORIZONTAL_SIZE, 100), font_path='arial.ttf'):
+                        bg_color='black', size=(HORIZONTAL_SIZE, 100), font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'):
         logger.info(f"Creating text overlay with duration: {duration:.2f}s, fontsize: {fontsize}")
         logger.debug(f"Text length: {len(text)} characters")
         
@@ -216,7 +216,7 @@ class VideoEditor:
                 logger.debug(f"Creating text clip {i+1}/{num_chunks}, text: '{chunk[:20]}...'")
                 clip = TextClip(
                     text=chunk,
-                    font=font_path,
+                    font=font,
                     font_size=fontsize,
                     color=color,
                     bg_color=bg_color,
