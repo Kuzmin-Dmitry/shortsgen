@@ -38,5 +38,8 @@ RUN mkdir -p output/images output/video output/voice output/text
 # Set environment variable
 ENV PYTHONUNBUFFERED=1
 
-# Run the application
+# Expose the API port
+EXPOSE 8000
+
+# Run the server
 CMD ["python", "main.py"]
