@@ -6,6 +6,7 @@ This is a project for generating creative videos using OpenAI API, MoviePy and o
 
 - **config.py**: Configuration and API keys.
 - **main.py**: Main launch script.
+- **api.py**: API server for continuous operation.
 - **services/**: Modules with business logic for generating text, images, audio, and video.
 - **utils/**: Helper functions.
 
@@ -26,27 +27,75 @@ pip install -r requirements.txt
 docker build -t shortsgen .
 ```
 
-### Running the Container
+### Running the Container as an API Service
 Create a `.env` file with your API keys:
 ```
 OPENAI_API_KEY=your_openai_key
 DEFAULT_OUTPUT_DIR=/app/output
 ```
 
-Run the container:
+Run the container with API exposed:
 
 For PowerShell in Windows Terminal:
 ```powershell
-docker run --rm `
+docker run -d -p 8000:8000 `
     --env-file .env `
     -v .\output:/app/output `
+    --name shortsgen `
     shortsgen
 ```
 
 This command:
+- Starts the container in detached mode (-d)
+- Maps port 8000 from the container to your local machine
 - Uses your environment variables from `.env`
 - Mounts the local `output` directory to the container's output directory
-- Removes the container after execution
+
+### API Usage
+
+The API provides the following endpoints:
+
+- `GET /` - Health check endpoint
+- `POST /generate` - Start a video generation job
+- `GET /status/{job_id}` - Check the status of a generation job
+
+#### Example: Start a generation job
+
+```bash
+curl -X POST "http://localhost:8000/generate" \
+    -H "Content-Type: application/json" \
+    -d '{}'
+```
+
+For PowerShell in Windows:
+
+```powershell
+Invoke-RestMethod -Method POST -Uri "http://localhost:8000/generate" -ContentType "application/json" -Body '{}'
+```
+
+Or alternative PowerShell syntax:
+
+```powershell
+$body = @{} | ConvertTo-Json
+Invoke-RestMethod -Method POST -Uri "http://localhost:8000/generate" -ContentType "application/json" -Body $body
+```
+
+#### Example: Check job status
+
+```bash
+curl -X GET "http://localhost:8000/status/0"
+```
+
+## Original Functionality
+
+If you prefer to use the original functionality without the API:
+
+```powershell
+docker run --rm `
+    --env-file .env `
+    -v .\output:/app/output `
+    shortsgen python main.py
+```
 
 ## Project Architecture
 
