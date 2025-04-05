@@ -11,8 +11,8 @@ load_dotenv()
 DEEPAI_API_KEY = os.getenv("DEEPAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# DEFAULT_IMAGE_SIZE = "1024x1024"
-DEFAULT_IMAGE_SIZE = "256x256"
+DEFAULT_IMAGE_SIZE = "1024x1024"
+# DEFAULT_IMAGE_SIZE = "256x256"
 DEFAULT_OUTPUT_DIR = os.getenv("DEFAULT_OUTPUT_DIR", "./output")
 
 DEFAULT_IMAGES_OUTPUT_DIR = os.path.join(DEFAULT_OUTPUT_DIR, "images")
@@ -27,15 +27,24 @@ VIDEO_FILE_PATH = os.path.join(DEFAULT_VIDEO_OUTPUT_DIR, "video.mp4")
 DALLE_MODEL = "dall-e-2"
 
 # Name of the model used for audio generation
-OPENAI_MODEL = "gpt-4o-audio-preview"
+OPENAI_MODEL = "gpt-4o-mini-tts"
 LOCAL_TEXT_TO_TEXT_MODEL = "gemma3:12b"
 LOCAL = False  # Working with local models: "run ollama serve"
 
 # Audio settings: voice and format
 AUDIO_CONFIG = {
-    "voice": "nova",
+    "voice": "coral",
     "format": "mp3"
 }
+
+# Audio instructions for the new streaming API
+AUDIO_INSTRUCTIONS = """
+Affect: A gentle, curious narrator with a Russian accent, guiding a magical, child-friendly adventure.
+Tone: Magical, warm, and inviting, creating a sense of wonder and excitement.
+Pacing: Steady and measured, with slight pauses to emphasize magical moments.
+Emotion: Wonder, curiosity, and a sense of adventure, with a lighthearted and positive vibe throughout.
+Pronunciation: Clear and precise, with an emphasis on storytelling.
+"""
 
 # System message for setting audio style (customizable template)
 SYSTEM_PROMPT = (
