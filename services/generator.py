@@ -1,19 +1,23 @@
 import os
 import logging
 import time
+import yaml
 from services.audio_service import AudioService
 from services.video_service import VideoEditor
 from services.chat_service import ChatService
 from services.image_service import ImageService
+from utils import file_utils
 from config import (
     FRAMES_PROMPT_TEMPLATE,
-    DEFAULT_IMAGES_OUTPUT_DIR, 
+    DEFAULT_SCENES_OUTPUT_DIR, 
     VOICE_FILE_PATH, 
     VIDEO_FILE_PATH, 
     DEFAULT_VOICE_OUTPUT_DIR, 
     DEFAULT_VIDEO_OUTPUT_DIR,
     NOVELLA_PROMPT,
     NUMBER_OF_THE_SCENES,
+    SEARCH_REQUEST_TEMPLATE,
+    DEFAULT_SCENES_OUTPUT_DIR,
     LOCAL
 )
 
@@ -26,6 +30,77 @@ class Generator:
         self.image_service = ImageService()
         self.video_editor = VideoEditor()
         logger.info("Generator initialized with all required services")
+
+    def find_and_generate(self):
+        """Method to find related images from the internet and generate a video"""
+        logger.info("Starting the find and generate process")
+        start_time = time.time()
+
+        # Sequential execution of all video creation stages
+        novella_text = self._generate_novella_text()
+        if not novella_text:
+            logger.error("Video generation aborted: Failed to generate novella text")
+            return False
+
+        image_requests_text = self._generate_image_requests(novella_text)
+        if not image_requests_text:
+            logger.error("Video generation aborted: Failed to generate scene descriptions")
+            return False
+    
+        # Find related images from the internet and download them
+        os.makedirs(DEFAULT_SCENES_OUTPUT_DIR, exist_ok=True)
+        logger.info(f"Searching and downloading {NUMBER_OF_THE_SCENES} images from the internet")
+        
+        successful_downloads = 0
+        for scene in range(NUMBER_OF_THE_SCENES):
+            search_query = image_requests_text[scene]
+            logger.info(f"Searching for image {scene}/{NUMBER_OF_THE_SCENES}: {search_query[:40]}...")
+            
+            # Try up to 3 times to find and download an image
+            max_retries = 5
+            attempt = 0
+            success = False
+            
+            while attempt < max_retries and not success:
+                attempt += 1
+                if attempt > 1:
+                    logger.info(f"Retry attempt {attempt}/{max_retries} for scene {scene}")
+                    
+                # Find image URL using the search query
+                image_url = self.image_service.find_image_url_by_prompt(search_query)
+                if not image_url:
+                    logger.error(f"Failed to find image URL for scene {scene}")
+                    continue
+                
+                # Download the image
+                image_filename = f"image_{scene}.jpg"
+                image_path = os.path.join(DEFAULT_SCENES_OUTPUT_DIR, image_filename)
+                
+                if self.image_service.download_image_from_url(image_url, image_path):
+                    logger.info(f"Downloaded image for scene {scene}")
+                    successful_downloads += 1
+                    success = True
+                else:
+                    logger.error(f"Failed to download image for scene {scene}, attempt {attempt}")
+            
+            if not success:
+                logger.error(f"All attempts to download image for scene {scene} failed")
+        
+        if successful_downloads == 0:
+            logger.error("Video generation aborted: Failed to download any images")
+            return False
+        
+        if not self._generate_voice_from_text(novella_text):
+            logger.error("Video generation aborted: Failed to generate voice narration")
+            return False
+            
+        if not self._compose_video_with_audio(novella_text):
+            logger.error("Video generation aborted: Failed to compose final video")
+            return False
+        
+        elapsed_time = time.time() - start_time
+        logger.info(f"Find and generate process completed successfully in {elapsed_time:.2f} seconds")
+        return True
 
     def generate(self):
         """Main method coordinating the video creation process"""
@@ -120,15 +195,47 @@ class Generator:
             )
         
         return self._execute_operation(operation, "scene descriptions")
-    
+
+    def _generate_image_requests(self, novella_text):
+        """Dividing the novella into key scenes and generating search queries"""
+        def operation():
+            count_scenes = NUMBER_OF_THE_SCENES
+            logger.debug(f"Generating descriptions for web search request to find {count_scenes} scenes")
+            
+            search_prompt = SEARCH_REQUEST_TEMPLATE.format(count_scenes=count_scenes, novella_text=novella_text)
+            
+            # Use unified interface to get YAML response
+            yaml_response = self.chat_service.generate_text(
+                search_prompt,
+                max_tokens=count_scenes * 30 + 100
+            )
+            
+            # Parse YAML to extract the list of image search queries
+            try:
+                parsed_yaml = yaml.safe_load(yaml_response)
+                if not parsed_yaml or 'image_search_queries' not in parsed_yaml:
+                    logger.error("Invalid YAML response: missing 'image_search_queries' key")
+                    return None
+                
+                search_queries = parsed_yaml['image_search_queries']
+                logger.debug(f"Successfully parsed {len(search_queries)} image search queries")
+                return search_queries
+                
+            except yaml.YAMLError as e:
+                logger.error(f"Failed to parse YAML response: {str(e)}")
+                logger.debug(f"Raw YAML response: {yaml_response}")
+                return None
+
+        return self._execute_operation(operation, "web request descriptions")
+
     def _generate_scene_images(self, frames_text):
         """Generation of images for each scene"""
         def operation():
             count_scenes = NUMBER_OF_THE_SCENES
             logger.info(f"Generating {count_scenes} scene images")
             
-            os.makedirs(DEFAULT_IMAGES_OUTPUT_DIR, exist_ok=True)
-            logger.debug(f"Created output directory: {DEFAULT_IMAGES_OUTPUT_DIR}")
+            os.makedirs(DEFAULT_SCENES_OUTPUT_DIR, exist_ok=True)
+            logger.debug(f"Created output directory: {DEFAULT_SCENES_OUTPUT_DIR}")
             
             for scene in range(1, count_scenes + 1):
                 logger.info(f"Processing scene {scene}/{count_scenes}")
@@ -146,7 +253,7 @@ class Generator:
 
                 image_filename = f"image_{scene}.jpg"
                 
-                if not self.image_service.generate_image(image_prompt, DEFAULT_IMAGES_OUTPUT_DIR, image_filename):
+                if not self.image_service.generate_image(image_prompt, DEFAULT_SCENES_OUTPUT_DIR, image_filename):
                     logger.error(f"Failed to generate image for scene {scene}")
                     return False
                 
@@ -183,7 +290,7 @@ class Generator:
             logger.info(f"Creating final video at {VIDEO_FILE_PATH}")
             
             self.video_editor.create_video_with_transitions(
-                DEFAULT_IMAGES_OUTPUT_DIR, 
+                DEFAULT_SCENES_OUTPUT_DIR, 
                 VOICE_FILE_PATH, 
                 VIDEO_FILE_PATH, 
                 novella_text, 

@@ -60,6 +60,36 @@ async def generate_video(request: GenerationRequest, background_tasks: Backgroun
         message="Job queued for processing"
     )
 
+@app.post("/generateFromInternet", response_model=JobStatus, status_code=status.HTTP_202_ACCEPTED)
+async def generate_from_internet(request: GenerationRequest, background_tasks: BackgroundTasks):
+    """Start a video generation job using internet images"""
+    global current_job_id
+    job_id = current_job_id
+    current_job_id += 1
+    
+    logger.info(f"Received generate from internet request, assigned job ID: {job_id}")
+    
+    # Initialize job status
+    jobs[job_id] = {
+        "status": "queued",
+        "message": "Job queued for processing",
+        "output_file": None
+    }
+    
+    # Add job to background tasks
+    background_tasks.add_task(
+        process_generation_job, 
+        job_id=job_id, 
+        custom_prompt=request.custom_prompt,
+        use_internet=True
+    )
+    
+    return JobStatus(
+        job_id=job_id,
+        status="queued",
+        message="Job queued for processing"
+    )
+
 @app.get("/status/{job_id}", response_model=JobStatus)
 async def get_job_status(job_id: int):
     """Get status of a generation job"""
@@ -77,7 +107,7 @@ async def get_job_status(job_id: int):
         output_file=job["output_file"]
     )
 
-def process_generation_job(job_id: int, custom_prompt: str = None):
+def process_generation_job(job_id: int, custom_prompt: str = None, use_internet: bool = False):
     """Process a generation job in the background"""
     try:
         logger.info(f"Starting processing for job {job_id}")
@@ -87,7 +117,10 @@ def process_generation_job(job_id: int, custom_prompt: str = None):
         # Create generator and generate
         generator = Generator()
         
-        success = generator.generate()
+        if use_internet:
+            success = generator.find_and_generate()
+        else:
+            success = generator.generate()
         
         if success:
             # Get the output file path from the configuration
