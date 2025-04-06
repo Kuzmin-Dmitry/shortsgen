@@ -33,7 +33,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create output directories
-RUN mkdir -p output/images output/video output/voice output/text
+RUN mkdir -p output/scenes output/video output/voice output/text
 
 # Set environment variable
 ENV PYTHONUNBUFFERED=1

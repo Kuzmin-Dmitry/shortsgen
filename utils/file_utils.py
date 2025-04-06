@@ -6,6 +6,11 @@ ensuring that the necessary directories exist before performing file operations.
 """
 
 import os
+import requests
+import logging
+from typing import List, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 def ensure_directory(path: str):
     """
