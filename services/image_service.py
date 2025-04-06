@@ -1,22 +1,25 @@
 import os
 import requests
 import re
+import time
 import logging
+from typing import Union, List
 from config import (
     OPENAI_API_KEY,
     DEFAULT_IMAGE_SIZE,
-    DEFAULT_IMAGES_OUTPUT_DIR,
+    DEFAULT_SCENES_OUTPUT_DIR,
     DALLE_MODEL,
-    TEST_IMAGES
+    TEST_SCENES
 )
 from openai import OpenAI
+from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
 
 class ImageService:
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
-        logger.info(f"ImageService initialized with DALL-E model: {DALLE_MODEL}, test_mode: {TEST_IMAGES}")
+        logger.info(f"ImageService initialized with DALL-E model: {DALLE_MODEL}, test_mode: {TEST_SCENES}")
 
     def generate_image_url(self, prompt: str, size: str = DEFAULT_IMAGE_SIZE, dalle_model=DALLE_MODEL) -> str:
         """
@@ -53,7 +56,7 @@ class ImageService:
             logger.error(f"Error generating image URL: {str(e)}", exc_info=True)
             return None
 
-    def download_image(self, image_url: str, output_path: str) -> bool:
+    def download_image_from_llm(self, image_url: str, output_path: str) -> bool:
         """
         Downloads an image from the specified URL and saves it to the given path.
         
@@ -73,6 +76,93 @@ class ImageService:
                 
             file_size_kb = os.path.getsize(output_path) / 1024
             logger.info(f"Image downloaded successfully ({file_size_kb:.2f} KB)")
+            return True
+        except Exception as e:
+            logger.error(f"Error downloading image: {str(e)}", exc_info=True)
+            return False
+
+    @classmethod
+    def find_image_url_by_prompt(cls, prompt: str) -> str:
+        """
+        Finds a related image based on a single prompt using DuckDuckGo search.
+        
+        Args:
+            prompt: The text prompt to search for related images.
+            
+        Returns:
+            A URL of a related image, or empty string if none found.
+        """
+        prompt_truncated = prompt[:30] + "..." if len(prompt) > 30 else prompt
+        logger.info(f"Searching for related image for prompt: {prompt_truncated}...")
+        
+        # Retry parameters
+        max_results = 1
+        max_retries = 3
+        retry_count = 0
+        base_delay = 2
+        
+        while retry_count < max_retries:
+            try:
+                # Using DuckDuckGo search which doesn't require API keys
+                ddgs = DDGS()
+                results = list(ddgs.images(
+                    prompt, 
+                    max_results=max_results,
+                    safesearch="on"
+                ))
+                
+                # Extract first valid image URL
+                if results:
+                    image_url = results[0]["image"]
+                    logger.info(f"Found image for prompt: {prompt_truncated}")
+                    return image_url
+                else:
+                    logger.warning(f"No images found for prompt '{prompt_truncated}' (attempt {retry_count+1}/{max_retries})")
+                    
+            except Exception as e:
+                logger.error(f"Error searching for image with prompt '{prompt_truncated}' (attempt {retry_count+1}/{max_retries}): {str(e)}")
+            
+            # If we need to retry
+            retry_count += 1
+            if retry_count < max_retries:
+                wait_time = base_delay * (2 ** (retry_count - 1))  # Exponential backoff
+                logger.info(f"Waiting {wait_time} seconds before retry...")
+                time.sleep(wait_time)
+        
+        logger.warning(f"No image found after {max_retries} attempts")
+        return ""
+    
+    @classmethod
+    def download_image_from_url(cls, image_url: str, output_path: str) -> bool:
+        """
+        Downloads an image from a specified URL and saves it to the given path.
+        
+        Args:
+            image_url: The URL of the image to download.
+            output_path: The file path where the image should be saved.
+            
+        Returns:
+            bool: True if the download was successful, False otherwise
+        """
+        try:
+            logger.info(f"Downloading image from {image_url} to {output_path}")
+            
+            # Ensure the directory exists
+            directory = output_path
+            if os.path.splitext(output_path)[1]:  # Check if path has a file extension
+                directory = os.path.dirname(output_path)
+            os.makedirs(directory, exist_ok=True)
+            
+            # Download the image
+            response = requests.get(image_url, stream=True, timeout=30)
+            response.raise_for_status()  # Check if the request was successful
+            
+            # Save the image to the specified path
+            with open(output_path, 'wb') as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
+                    
+            logger.info(f"Successfully downloaded image to {output_path}")
             return True
         except Exception as e:
             logger.error(f"Error downloading image: {str(e)}", exc_info=True)
@@ -99,11 +189,11 @@ class ImageService:
         """
         try:
             sanitized_image_filename = self.sanitize_filename(image_filename)
-            output_path = os.path.join(DEFAULT_IMAGES_OUTPUT_DIR, sanitized_image_filename)
+            output_path = os.path.join(DEFAULT_SCENES_OUTPUT_DIR, sanitized_image_filename)
             logger.debug(f"Processing prompt for image: {sanitized_image_filename}")
             
-            # TEST_IMAGES check
-            if TEST_IMAGES and os.path.isfile(output_path):
+            # TEST_SCENES check
+            if TEST_SCENES and os.path.isfile(output_path):
                 logger.info(f"Using existing image: {output_path} [TEST_MODE]")
                 return True
                 
@@ -112,7 +202,7 @@ class ImageService:
                 logger.error("Failed to generate image URL")
                 return False
                 
-            return self.download_image(image_url, output_path)
+            return self.download_image_from_llm(image_url, output_path)
         except Exception as e:
             logger.error(f"Error processing image prompt: {str(e)}", exc_info=True)
             return False
@@ -124,7 +214,7 @@ class ImageService:
         logger.info(f"Generating image: {image_filename}")
         
         # Create output directory if it doesn't exist
-        sanitized_output_dir = DEFAULT_IMAGES_OUTPUT_DIR
+        sanitized_output_dir = DEFAULT_SCENES_OUTPUT_DIR
         os.makedirs(sanitized_output_dir, exist_ok=True)
         logger.debug(f"Ensuring output directory exists: {sanitized_output_dir}")
         
