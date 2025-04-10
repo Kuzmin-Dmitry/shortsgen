@@ -74,35 +74,33 @@ FRAMES_PROMPT_TEMPLATE = (
     "Add a General description of the environment as the fifth scene for creating a drawing, up to 100 words long."
 )
 
-# Template for creating web requests for searching images in internet
-SEARCH_REQUEST_TEMPLATE = (
-    "Create a series of search queries for illustrating a novella divided into {count_scenes} parts.\n\n"
-    "# TASK:\n"
-    "Analyze the novella text, divide it into {count_scenes} logical parts, and create ONE search query for EACH part to find a suitable image.\n\n"
-    "# STRICT OUTPUT FORMAT REQUIREMENTS:\n"
-    "* The result MUST be presented ONLY in YAML format with a single key 'image_search_queries'\n"
-    "* DO NOT add any explanations, comments, or additional text before or after the YAML\n"
-    "* DO NOT use code markers (```) — output only clean YAML\n\n"
-    "# SEARCH QUERY REQUIREMENTS:\n"
-    "1. Length of EACH query: exactly 5-12 words\n"
-    "2. EACH query MUST include the protagonist's name EXACTLY as mentioned in the text\n"
-    "3. Queries should describe a SPECIFIC scene from the corresponding part of the text\n"
-    "4. Include in EACH query:\n"
-    "   - Main character (by name)\n"
-    "   - Specific action\n"
-    "   - Clear description of the setting\n"
-    "   - Lighting and atmosphere\n"
-    "5. Use vivid visual adjectives and popular keywords for image search engines\n"
-    "6. Ensure visual consistency across all queries: uniform style, color palette, composition\n"
-    "7. AVOID abstract concepts and vague wording\n"
-    "8. Use phrases that are likely to find professional photographs or artistic images\n\n"
-    "# EXAMPLE OF CORRECT OUTPUT:\n"
-    "image_search_queries:\n"
-    "  - \"Anna Karenina at winter station in dim lantern light\"\n"
-    "  - \"Anna Karenina reading letter sunny morning luxurious living room\"\n\n"
-    
+SEARCH_USER_PROMPT = (
+    "Generate {count_scenes} image search queries for a novella illustration. Each query must include:\n"
+    "1. Protagonist's name\n2. Specific action\n3. Environment details\n4. Atmospheric conditions\n"
+    "Format: [Name] [action verb] in/on [location] with [lighting/weather]. Example: 'Anna running through misty forest under moonlight'\n\n"
     "Novella text:\n{novella_text}"
 )
+
+SEARCH_QUERY_FUNCTION = [{
+    "type": "function",
+    "function": {
+        "name": "generate_search_queries",
+        "description": "Generate image search queries",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "queries": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of search queries for finding images"
+                }
+            },
+            "required": ["queries"]
+        }
+    }
+}]
 
 #
 # Testing features

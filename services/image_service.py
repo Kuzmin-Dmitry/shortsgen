@@ -103,7 +103,28 @@ class ImageService:
         
         while retry_count < max_retries:
             try:
-                # Using DuckDuckGo search which doesn't require API keys
+                """DuckDuckGo images search. Query params: https://duckduckgo.com/params.
+
+                Args:
+                    keywords: keywords for query.
+                    region: wt-wt, us-en, uk-en, ru-ru, etc. Defaults to "wt-wt".
+                    safesearch: on, moderate, off. Defaults to "moderate".
+                    timelimit: Day, Week, Month, Year. Defaults to None.
+                    size: Small, Medium, Large, Wallpaper. Defaults to None.
+                    color: color, Monochrome, Red, Orange, Yellow, Green, Blue,
+                        Purple, Pink, Brown, Black, Gray, Teal, White. Defaults to None.
+                    type_image: photo, clipart, gif, transparent, line.
+                        Defaults to None.
+                    layout: Square, Tall, Wide. Defaults to None.
+                    license_image: any (All Creative Commons), Public (PublicDomain),
+                        Share (Free to Share and Use), ShareCommercially (Free to Share and Use Commercially),
+                        Modify (Free to Modify, Share, and Use), ModifyCommercially (Free to Modify, Share, and
+                        Use Commercially). Defaults to None.
+                    max_results: max number of results. If None, returns results only from the first response. Defaults to None.
+
+                Returns:
+                    List of dictionaries with images search results.
+                """
                 ddgs = DDGS()
                 results = list(ddgs.images(
                     prompt, 
