@@ -148,7 +148,7 @@ class VideoEditor:
             # Apply fade-in and fade-out effects if requested
             if apply_fades:
                 logger.debug(f"Applying fade effects with duration={fade_duration}s")
-                ken_burns_clip = ken_burns_clip.fx(fadein, fade_duration).fx(fadeout, fade_duration)
+                ken_burns_clip = ken_burns_clip.fx(FadeIn, fade_duration).fx(FadeOut, fade_duration)
             
             return ken_burns_clip
         except Exception as e:
@@ -258,7 +258,7 @@ class VideoEditor:
     #     return concatenate_videoclips(clips)
 
     def create_video_with_transitions(self, image_folder: str, audio_file: str, output_file: str, text: str,
-                                    apply_fades: bool = False, fade_duration: float = 0.5, fps: int = 24) -> None:
+                                    apply_fades: bool = False, fade_duration: float = 0.5, fps: int = 24, font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf') -> None:
         logger.info(f"Creating video with transitions: {image_folder} → {output_file}")
         start_time = time.time()
         
