@@ -1,7 +1,6 @@
 import os
 import logging
 import time
-import yaml
 from services.audio_service import AudioService
 from services.video_service import VideoEditor
 from services.chat_service import ChatService
@@ -16,9 +15,9 @@ from config import (
     DEFAULT_VIDEO_OUTPUT_DIR,
     NOVELLA_PROMPT,
     NUMBER_OF_THE_SCENES,
-    SEARCH_REQUEST_TEMPLATE,
     DEFAULT_SCENES_OUTPUT_DIR,
-    LOCAL
+    SEARCH_QUERY_FUNCTION,
+    SEARCH_USER_PROMPT
 )
 
 logger = logging.getLogger(__name__)
@@ -34,6 +33,7 @@ class Generator:
     def find_and_generate(self):
         """Method to find related images from the internet and generate a video"""
         logger.info("Starting the find and generate process")
+        logger.debug(f"Using novella prompt: {NOVELLA_PROMPT}")
         start_time = time.time()
 
         # Sequential execution of all video creation stages
@@ -41,11 +41,13 @@ class Generator:
         if not novella_text:
             logger.error("Video generation aborted: Failed to generate novella text")
             return False
+        logger.debug(f"Generated novella text: {novella_text}")
 
-        image_requests_text = self._generate_image_requests(novella_text)
+        image_requests_text = self._generate_image_web_requests(novella_text, SEARCH_QUERY_FUNCTION)
         if not image_requests_text:
             logger.error("Video generation aborted: Failed to generate scene descriptions")
             return False
+        logger.debug(f"Generated image requests: {image_requests_text}")
     
         # Find related images from the internet and download them
         os.makedirs(DEFAULT_SCENES_OUTPUT_DIR, exist_ok=True)
@@ -55,6 +57,7 @@ class Generator:
         for scene in range(NUMBER_OF_THE_SCENES):
             search_query = image_requests_text[scene]
             logger.info(f"Searching for image {scene}/{NUMBER_OF_THE_SCENES}: {search_query[:40]}...")
+            logger.debug(f"Search query for scene {scene}: {search_query}")
             
             # Try up to 3 times to find and download an image
             max_retries = 5
@@ -71,6 +74,7 @@ class Generator:
                 if not image_url:
                     logger.error(f"Failed to find image URL for scene {scene}")
                     continue
+                logger.debug(f"Image URL for scene {scene}: {image_url}")
                 
                 # Download the image
                 image_filename = f"image_{scene}.jpg"
@@ -112,6 +116,7 @@ class Generator:
         if not novella_text:
             logger.error("Video generation aborted: Failed to generate novella text")
             return False
+        logger.debug(f"Generated novella text: {novella_text}")
             
         frames_text = self._generate_scene_descriptions(novella_text)
         if not frames_text:
@@ -147,6 +152,7 @@ class Generator:
             Result of operation_func execution or None in case of error
         """
         logger.info(f"Starting operation: {operation_name}")
+        logger.debug(f"Operation '{operation_name}' started")
         start_time = time.time()
         
         try:
@@ -160,6 +166,7 @@ class Generator:
                     logger.debug(f"Result preview: {result_preview}")
                 else:
                     logger.info(f"Operation '{operation_name}' completed successfully in {elapsed_time:.2f}s")
+                    logger.debug(f"Operation '{operation_name}' result: {result}")
             else:
                 logger.warning(f"Operation '{operation_name}' returned empty result in {elapsed_time:.2f}s")
                 
@@ -171,62 +178,70 @@ class Generator:
     
     def _generate_novella_text(self):
         """Generation of mini-novella text"""
-        def operation():
-            novella_prompt = NOVELLA_PROMPT
-            logger.debug(f"Using novella prompt: {novella_prompt[:50]}...")
-            
-            # Use unified interface
-            return self.chat_service.generate_text(novella_prompt)
-                
-        return self._execute_operation(operation, "novella text generation")
+        novella_prompt = NOVELLA_PROMPT
+        logger.debug(f"Using novella prompt: {novella_prompt[:50]}...")
+        # Use unified interface
+        return self.chat_service.generate_text(novella_prompt)
     
     def _generate_scene_descriptions(self, novella_text):
         """Dividing the novella into key scenes"""
-        def operation():
-            count_scenes = NUMBER_OF_THE_SCENES
-            logger.debug(f"Generating scene descriptions for {count_scenes} scenes")
-            
-            frames_prompt = FRAMES_PROMPT_TEMPLATE.format(count_scenes=count_scenes, novella_text=novella_text)
-            
-            # Use unified interface
-            return self.chat_service.generate_text(
-                frames_prompt, 
-                max_tokens=count_scenes * 100 + 200
-            )
-        
-        return self._execute_operation(operation, "scene descriptions")
+        count_scenes = NUMBER_OF_THE_SCENES
+        frames_prompt = FRAMES_PROMPT_TEMPLATE.format(count_scenes=count_scenes, novella_text=novella_text)
+        logger.debug(f"Generating scene descriptions for {count_scenes} scenes")
+        logger.debug(f"Frames prompt: {frames_prompt}")
+        # Use unified interface
+        return self.chat_service.generate_text(
+            frames_prompt, 
+            max_tokens=count_scenes * 100 + 200
+        )
 
-    def _generate_image_requests(self, novella_text):
+    def _generate_image_web_requests(self, novella_text, functions):
         """Dividing the novella into key scenes and generating search queries"""
-        def operation():
-            count_scenes = NUMBER_OF_THE_SCENES
-            logger.debug(f"Generating descriptions for web search request to find {count_scenes} scenes")
+        count_scenes = NUMBER_OF_THE_SCENES
+        search_prompt = SEARCH_USER_PROMPT.format(count_scenes=count_scenes, novella_text=novella_text)
+        logger.debug(f"Генерация запросов для поиска {count_scenes} изображений")
+        logger.debug(f"Search prompt: {search_prompt}")
+        
+        # Получаем запросы от API
+        response = self.chat_service.generate_text(
+            search_prompt,
+            functions,
+            max_tokens=count_scenes * 50
+        )
+        
+        # The response should now be a list of search queries
+        if isinstance(response, list):
+            # Если получен список запросов
+            logger.info(f"Получено {len(response)} поисковых запросов")
             
-            search_prompt = SEARCH_REQUEST_TEMPLATE.format(count_scenes=count_scenes, novella_text=novella_text)
+            # Обеспечиваем нужное количество запросов
+            if len(response) < count_scenes:
+                logger.warning(f"Получено только {len(response)} запросов вместо {count_scenes}, дублируем последний")
+                last_query = response[-1] if response else "person in noir style city"
+                response.extend([last_query] * (count_scenes - len(response)))
             
-            # Use unified interface to get YAML response
-            yaml_response = self.chat_service.generate_text(
-                search_prompt,
-                max_tokens=count_scenes * 30 + 100
-            )
+            return response[:count_scenes]  # Возвращаем точное количество запросов
+        else:
+            # Резервный вариант для текстовых ответов
+            logger.warning(f"Ожидался список запросов, получен {type(response)}. Создаем общие запросы.")
+            fallback_queries = []
             
-            # Parse YAML to extract the list of image search queries
-            try:
-                parsed_yaml = yaml.safe_load(yaml_response)
-                if not parsed_yaml or 'image_search_queries' not in parsed_yaml:
-                    logger.error("Invalid YAML response: missing 'image_search_queries' key")
-                    return None
-                
-                search_queries = parsed_yaml['image_search_queries']
-                logger.debug(f"Successfully parsed {len(search_queries)} image search queries")
-                return search_queries
-                
-            except yaml.YAMLError as e:
-                logger.error(f"Failed to parse YAML response: {str(e)}")
-                logger.debug(f"Raw YAML response: {yaml_response}")
-                return None
-
-        return self._execute_operation(operation, "web request descriptions")
+            # Пытаемся разделить текст на строки, если это строка
+            if isinstance(response, str):
+                lines = response.strip().split('\n')
+                fallback_queries = [line.strip() for line in lines if line.strip()]
+            
+            # Если не удалось получить запросы, создаем базовые
+            if not fallback_queries:
+                fallback_queries = [f"noir scene {i+1} with dramatic lighting" for i in range(count_scenes)]
+            
+            # Обеспечиваем нужное количество запросов
+            if len(fallback_queries) < count_scenes:
+                last_query = fallback_queries[-1] if fallback_queries else "noir scene with dramatic lighting"
+                fallback_queries.extend([last_query] * (count_scenes - len(fallback_queries)))
+            
+            logger.debug(f"Fallback queries: {fallback_queries}")
+            return fallback_queries[:count_scenes]
 
     def _generate_scene_images(self, frames_text):
         """Generation of images for each scene"""
@@ -249,6 +264,7 @@ class Generator:
                 
                 # Use unified interface
                 image_prompt = self.chat_service.generate_text(prompt_for_image, max_tokens=100)
+                logger.debug(f"Prompt for image generation: {prompt_for_image}")
                 logger.debug(f"Image prompt for scene {scene}: {image_prompt[:50]}...")
 
                 image_filename = f"image_{scene}.jpg"
@@ -272,6 +288,7 @@ class Generator:
             logger.info(f"Generating audio narration to {VOICE_FILE_PATH}")
             result = self.audio_service.generate_audio(novella_text, VOICE_FILE_PATH, language='ru')
             
+            logger.debug(f"Voice generation result: {result}")
             if result:
                 logger.info("Audio narration generated successfully")
             else:
@@ -297,6 +314,7 @@ class Generator:
                 apply_fades=False
             )
             
+            logger.debug(f"Video creation result: {VIDEO_FILE_PATH}")
             if os.path.exists(VIDEO_FILE_PATH):
                 file_size_mb = os.path.getsize(VIDEO_FILE_PATH) / (1024 * 1024)
                 logger.info(f"Final video created successfully: {VIDEO_FILE_PATH} ({file_size_mb:.2f} MB)")
