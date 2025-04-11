@@ -249,7 +249,7 @@ c:\git\shortsgen\
 |----------|-----|----------|
 | DEEPAI_API_KEY | string | API key for DeepAI |
 | OPENAI_API_KEY | string | API key for OpenAI |
-| DEFAULT_IMAGE_SIZE | string | Default image size |
+| GENERATED_IMAGE_SIZE | string | Default image size |
 | DEFAULT_OUTPUT_DIR | string | Path to output directory |
 | DALLE_MODEL | string | DALL-E model for image generation |
 | OPENAI_MODEL | string | OpenAI model for audio generation |
