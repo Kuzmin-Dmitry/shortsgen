@@ -517,6 +517,7 @@ class VideoEditor:
                 codec='libx264', 
                 audio_codec='aac', 
                 fps=self.settings.fps,
+                threads=4,  # Set a reasonable thread count
                 logger=None  # Disable moviepy's logger to use our own
             )
             
