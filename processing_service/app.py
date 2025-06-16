@@ -1,6 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, status, Depends
 from pydantic import BaseModel
-from services.generator import Generator
+from generator import Generator
+from config import VIDEO_FILE_PATH
 import logging
 from typing import Dict, Optional
 from dataclasses import dataclass
@@ -188,13 +189,11 @@ def process_generation_job(
         # Generate based on the method requested
         if use_internet:
             success = generator.find_and_generate(custom_prompt=custom_prompt)
-        else:
-            # Call generate() without the custom_prompt parameter
+        else:            # Call generate() without the custom_prompt parameter
             success = generator.generate()
-
+        
         if success:
             # Get the output file path from the configuration
-            from config import VIDEO_FILE_PATH
             job_manager.update_job(
                 job_id,
                 status="completed",
@@ -219,4 +218,4 @@ def process_generation_job(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("processing_service.app:app", host="0.0.0.0", port=8001, reload=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=8001, reload=False)
