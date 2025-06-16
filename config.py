@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, TypedDict, Final
 from dataclasses import dataclass
 from enum import Enum
 from dotenv import load_dotenv
-from utils.logger import LoggerConfigurator
 
 # Load environment variables
 load_dotenv()
@@ -32,10 +31,10 @@ class Directories:
     """Application directory structure configuration."""
     
     base: str = os.getenv("DEFAULT_OUTPUT_DIR", "./output")
-    scenes: str = None
-    video: str = None
-    voice: str = None
-    text: str = None
+    scenes: str = ""
+    video: str = ""
+    voice: str = ""
+    text: str = ""
     
     def __post_init__(self) -> None:
         """Initialize derived directory paths."""
@@ -213,5 +212,4 @@ TEST_SCENES: Final[bool] = True  # Skip images generation if exist
 # ============================
 
 # Configure application logger
-logger_configurator = LoggerConfigurator()
-logger = logger_configurator.get_logger()
+logger = logging.getLogger(__name__)

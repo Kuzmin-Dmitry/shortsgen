@@ -5,6 +5,7 @@ __pycache__/
 # Ignore environment files
 .env
 myenv/
+.venv/
 
 # Ignore generated files
 output/

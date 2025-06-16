@@ -1,13 +1,20 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, status, Depends
 from pydantic import BaseModel
 from services.generator import Generator
-from utils.logger import LoggerConfigurator
+import logging
 from typing import Dict, Optional
 from dataclasses import dataclass
 
 # Configure logging
-logger_configurator = LoggerConfigurator()
-logger = logger_configurator.get_logger()
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('shortsgen.log', encoding='utf-8')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ShortsGen API", description="API for generating short videos")
 
@@ -16,8 +23,8 @@ class JobStatus(BaseModel):
     """Response model for job status"""
     job_id: int
     status: str
-    message: str = None
-    output_file: str = None
+    message: Optional[str] = None
+    output_file: Optional[str] = None
 
 class GenerationRequest(BaseModel):
     """Request model for generation jobs"""
@@ -86,8 +93,7 @@ async def generate_video(
     """Start a video generation job"""
     job_id = job_manager.create_job()
     logger.info(f"Received generation request, assigned job ID: {job_id}")
-    
-    # Add job to background tasks
+      # Add job to background tasks
     background_tasks.add_task(
         process_generation_job, 
         job_id=job_id, 
@@ -97,6 +103,11 @@ async def generate_video(
     )
     
     job_data = job_manager.get_job(job_id)
+    if job_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create job"
+        )
     return JobStatus(
         job_id=job_id,
         status=job_data.status,
@@ -112,8 +123,7 @@ async def generate_from_internet(
     """Start a video generation job using internet images"""
     job_id = job_manager.create_job()
     logger.info(f"Received generate from internet request, assigned job ID: {job_id}")
-    
-    # Add job to background tasks
+      # Add job to background tasks
     background_tasks.add_task(
         process_generation_job, 
         job_id=job_id, 
@@ -123,6 +133,11 @@ async def generate_from_internet(
     )
     
     job_data = job_manager.get_job(job_id)
+    if job_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create job"
+        )
     return JobStatus(
         job_id=job_id,
         status=job_data.status,
@@ -153,12 +168,14 @@ def process_generation_job(
     job_id: int, 
     custom_prompt: Optional[str] = None, 
     use_internet: bool = False,
-    job_manager: JobManager = None,
-    generator: Generator = None
+    job_manager: Optional[JobManager] = None,
+    generator: Optional[Generator] = None
 ):
     """Process a generation job in the background"""
     if generator is None:
         generator = Generator()
+    if job_manager is None:
+        raise ValueError("job_manager is required")
         
     try:
         logger.info(f"Starting processing for job {job_id}")
