@@ -2,13 +2,13 @@ import os
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union, Dict, Any, TypeVar, Generic, Tuple
+from typing import List, Optional, Union, Dict, Any, TypeVar, Generic, Tuple, Callable
+import logging
 
 from services.audio_service import AudioService
 from services.video_service import VideoEditor
 from services.chat_service import ChatService
 from services.image_service import ImageService
-from utils.logger import LoggerConfigurator, LogLevel
 from config import (
     FRAMES_PROMPT_TEMPLATE,
     DIRS,
@@ -20,9 +20,8 @@ from config import (
     SEARCH_USER_PROMPT
 )
 
-# Initialize the custom logger
-logger_configurator = LoggerConfigurator()
-logger = logger_configurator.get_logger("generator")
+# Initialize the logger
+logger = logging.getLogger(__name__)
 
 class GenerationStage(Enum):
     """Enumeration of the video generation workflow stages."""
@@ -94,9 +93,7 @@ class Generator:
         custom_prompt = custom_prompt or NOVELLA_PROMPT
         logger.info("Starting the find and generate process")
         logger.debug(f"Using novella prompt: {custom_prompt}")
-        start_time = time.time()
-
-        # Generate the novella text
+        start_time = time.time()        # Generate the novella text
         novella_result = self._generate_novella_text(custom_prompt)
         if not novella_result:
             return OperationResult(
@@ -105,9 +102,13 @@ class Generator:
                 stage=GenerationStage.NOVELLA_TEXT
             )
         novella_text = novella_result.data
-        logger.debug(f"Generated novella text: {novella_text}")
-
-        # Generate image search queries
+        if novella_text is None:
+            return OperationResult(
+                success=False,
+                error_message="Video generation aborted: No novella text generated",
+                stage=GenerationStage.NOVELLA_TEXT
+            )
+        logger.debug(f"Generated novella text: {novella_text}")        # Generate image search queries
         queries_result = self._generate_image_web_requests(novella_text, SEARCH_QUERY_FUNCTION)
         if not queries_result:
             return OperationResult(
@@ -116,6 +117,12 @@ class Generator:
                 stage=GenerationStage.IMAGE_SEARCH_QUERIES
             )
         image_requests_text = queries_result.data
+        if image_requests_text is None:
+            return OperationResult(
+                success=False,
+                error_message="Video generation aborted: No image search queries generated",
+                stage=GenerationStage.IMAGE_SEARCH_QUERIES
+            )
         logger.debug(f"Generated image requests: {image_requests_text}")
     
         # Find and download images
@@ -176,6 +183,12 @@ class Generator:
                 stage=GenerationStage.NOVELLA_TEXT
             )
         novella_text = novella_result.data
+        if novella_text is None:
+            return OperationResult(
+                success=False,
+                error_message="Video generation aborted: No novella text generated",
+                stage=GenerationStage.NOVELLA_TEXT
+            )
         logger.debug(f"Generated novella text: {novella_text}")
             
         # Generate scene descriptions
@@ -187,6 +200,12 @@ class Generator:
                 stage=GenerationStage.SCENE_DESCRIPTIONS
             )
         frames_text = frames_result.data
+        if frames_text is None:
+            return OperationResult(
+                success=False,
+                error_message="Video generation aborted: No scene descriptions generated",
+                stage=GenerationStage.SCENE_DESCRIPTIONS
+            )
             
         # Generate scene images
         images_result = self._generate_scene_images(frames_text)
@@ -205,8 +224,7 @@ class Generator:
                 error_message=f"Video generation aborted: {voice_result.error_message}",
                 stage=GenerationStage.VOICE_NARRATION
             )
-            
-        # Compose final video
+              # Compose final video
         video_result = self._compose_video_with_audio(novella_text)
         if not video_result:
             return OperationResult(
@@ -217,7 +235,6 @@ class Generator:
         
         elapsed_time = time.time() - start_time
         logger.info(f"Video generation completed successfully in {elapsed_time:.2f} seconds")
-        
         return OperationResult(
             success=True,
             data=VIDEO_FILE_PATH,
@@ -225,7 +242,7 @@ class Generator:
         )
     
     def _execute_operation(self, 
-                          operation_func: callable, 
+                          operation_func: Callable[[], Any], 
                           operation_name: str, 
                           stage: GenerationStage,
                           preview_length: int = 40) -> OperationResult[Any]:
@@ -354,18 +371,30 @@ class Generator:
                 functions,
                 max_tokens=count_scenes * 50
             )
-            
-            # Process the response into a standardized list format
-            if isinstance(response, list):
-                logger.info(f"Received {len(response)} search queries")
+              # Process the response into a standardized list format
+            if isinstance(response, dict) and "queries" in response:
+                # Response from function call - extract the queries list
+                queries = response["queries"]
+                logger.info(f"Received {len(queries)} search queries from function call")
                 
                 # Ensure we have the required number of queries
-                if len(response) < count_scenes:
-                    logger.warning(f"Received only {len(response)} queries instead of {count_scenes}, duplicating last")
-                    last_query = response[-1] if response else "person in noir style city"
-                    response.extend([last_query] * (count_scenes - len(response)))
+                if len(queries) < count_scenes:
+                    logger.warning(f"Received only {len(queries)} queries instead of {count_scenes}, duplicating last")
+                    last_query = queries[-1] if queries else "person in noir style city"
+                    queries.extend([last_query] * (count_scenes - len(queries)))
                 
-                return response[:count_scenes]  # Return exact number of queries
+                return queries[:count_scenes]  # Return exact number of queries            elif isinstance(response, list):
+                # Direct list response (fallback case)
+                queries_list = response  # Type narrow to list
+                logger.info(f"Received {len(queries_list)} search queries")
+                
+                # Ensure we have the required number of queries
+                if len(queries_list) < count_scenes:
+                    logger.warning(f"Received only {len(queries_list)} queries instead of {count_scenes}, duplicating last")
+                    last_query = queries_list[-1] if queries_list else "person in noir style city"
+                    queries_list.extend([last_query] * (count_scenes - len(queries_list)))
+                
+                return queries_list[:count_scenes]  # Return exact number of queries
             else:
                 # Fallback for text responses
                 logger.warning(f"Expected a list of queries, got {type(response)}. Creating generic queries.")
@@ -488,9 +517,17 @@ class Generator:
                     "conveying the full grim aesthetics of noir. "
                     "Focus on the visual details and mood, using the text as general context."
                 )
+                  # Generate image prompt
+                image_prompt_response = self.chat_service.generate_text(prompt_for_image, max_tokens=100)
                 
-                # Generate image prompt
-                image_prompt = self.chat_service.generate_text(prompt_for_image, max_tokens=100)
+                # Extract string from response (it should be text, not function call)
+                if isinstance(image_prompt_response, str):
+                    image_prompt = image_prompt_response
+                else:
+                    # Fallback if unexpected format
+                    logger.warning(f"Expected string image prompt, got {type(image_prompt_response)}")
+                    image_prompt = f"scene {scene} visual description"
+                
                 logger.debug(f"Image prompt for scene {scene}: {image_prompt[:50]}...")
 
                 image_filename = f"image_{scene}.jpg"

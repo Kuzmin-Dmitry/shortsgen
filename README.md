@@ -15,7 +15,7 @@ ShortsGen is a Python application designed to automatically generate short, crea
 * **Visual Effects:** Apply optional Ken Burns effect (zoom/pan) and fade transitions to image clips.
 * **Configurable:** Easily configure API keys, models, directories, prompts, and video settings via `config.py` and `.env`.
 * **Docker Support:** Run the application easily as a containerized API service.
-* **Structured Logging:** Detailed logging using a configurable logger utility.
+* **Structured Logging:** Detailed logging using Python's standard `logging` module with configurable levels and formatting.
 
 ## Project Structure
 
@@ -70,14 +70,11 @@ test-gemini/
    # Required API Keys
    OPENAI_API_KEY=your_openai_api_key_here
    # Optional: DeepAI key if used elsewhere (currently not used in core generation)
-   # DEEPAI_API_KEY=your_deepai_api_key_here
-
-   # Optional: Override default output directory (used inside Docker)
+   # DEEPAI_API_KEY=your_deepai_api_key_here   # Optional: Override default output directory (used inside Docker)
    DEFAULT_OUTPUT_DIR=/app/output
 
-   # Optional: Configure logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-   # LOG_LEVEL=DEBUG
-   # LOG_TO_FILE=true
+   # Logging is configured using Python's standard logging module
+   # You can adjust logging levels in the application code as needed
    # LOG_FILE_PATH=/app/output/shortsgen.log
    ```
 
@@ -313,10 +310,8 @@ graph TD
         Gemma[Local Gemma Model (Optional)]
         DDGS[DuckDuckGo Search API]
         MP[MoviePy Library]
-    end
-
-    subgraph "Utilities"
-        L[utils.Logger]
+    end    subgraph "Utilities"
+        L[Python logging module]
         C[config.py]
         ENV[.env File]
     end
