@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: ./api_gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PROCESSING_SERVICE_URL=http://processing-service:8001
+    depends_on:
+      - processing-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  processing-service:
+    build:
+      context: ./processing_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPAI_API_KEY=${DEEPAI_API_KEY}
+      - DEFAULT_OUTPUT_DIR=/app/output
+    volumes:
+      - ./output:/app/output
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  output_data:
+    driver: local

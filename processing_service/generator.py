@@ -5,10 +5,10 @@ from enum import Enum
 from typing import List, Optional, Union, Dict, Any, TypeVar, Generic, Tuple, Callable
 import logging
 
-from services.audio_service import AudioService
-from services.video_service import VideoEditor
-from services.chat_service import ChatService
-from services.image_service import ImageService
+from audio_service import AudioService
+from video_service import VideoEditor
+from chat_service import ChatService
+from image_service import ImageService
 from config import (
     FRAMES_PROMPT_TEMPLATE,
     DIRS,

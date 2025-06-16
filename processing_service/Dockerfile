@@ -68,11 +68,11 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="${APP_HOME}:${PATH}"
 
 # Expose the API port
-EXPOSE 8000
+EXPOSE 8001
 
 # Add health check to monitor application status
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
-# Run the server
-CMD ["python", "api_gateway/app.py"]
+# Run the application
+CMD ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]
