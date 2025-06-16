@@ -22,6 +22,9 @@ load_dotenv()
 DEEPAI_API_KEY: Final[Optional[str]] = os.getenv("DEEPAI_API_KEY")
 OPENAI_API_KEY: Final[Optional[str]] = os.getenv("OPENAI_API_KEY")
 
+# URL of the processing service (api-gateway communicates with it)
+PROCESSING_SERVICE_URL: Final[str] = os.getenv("PROCESSING_SERVICE_URL", "http://localhost:8001")
+
 # ============================
 # Directory Configuration
 # ============================

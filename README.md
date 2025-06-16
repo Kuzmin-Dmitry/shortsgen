@@ -22,9 +22,16 @@ ShortsGen is a Python application designed to automatically generate short, crea
 ```
 test-gemini/
 │
-├── main.py                # FastAPI application, API endpoints, job management
+├── api_gateway/           # Front-facing service
+│   ├── __init__.py
+│   ├── app.py             # Routes client requests to the processing service
+│   └── requirements.txt   # Gateway dependencies
+├── processing_service/    # Background worker service
+│   ├── __init__.py
+│   ├── app.py             # Handles job execution and video generation
+│   └── requirements.txt   # Processing service dependencies
 ├── config.py              # Central configuration (API keys, paths, models, prompts)
-├── requirements.txt       # Project dependencies
+├── requirements.txt       # Combined dependencies
 ├── README.md              # This documentation file
 ├── .env.example           # Example environment variables file
 │
@@ -52,6 +59,9 @@ test-gemini/
 2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
+   # or install individually for each service
+   pip install -r api_gateway/requirements.txt
+   pip install -r processing_service/requirements.txt
    ```
 
 3. **Install Fonts (Linux - needed for MoviePy TextClip):**
@@ -96,9 +106,11 @@ From the project root directory:
 docker build -t shortsgen .
 ```
 
-### Running the Container as an API Service
+### Running the Containers
 
 Create a local directory (e.g., output) to store the generated videos.
+
+First start the processing service (port 8001), then the API gateway (port 8000).
 
 Using PowerShell (Windows):
 
@@ -106,11 +118,17 @@ Using PowerShell (Windows):
 # Create output directory if it doesn't exist
 if (-not (Test-Path .\output)) { New-Item -ItemType Directory -Force -Path .\output }
 
+docker run -d -p 8001:8001 `
+    --env-file .env `
+    -v ${PWD}\output:/app/output `
+    --name processing-service `
+    shortsgen processing_service/app.py
+
 docker run -d -p 8000:8000 `
     --env-file .env `
     -v ${PWD}\output:/app/output `
-    --name shortsgen-api `
-    shortsgen
+    --name api-gateway `
+    shortsgen api_gateway/app.py
 ```
 
 Using Bash (Linux/macOS):
@@ -119,23 +137,28 @@ Using Bash (Linux/macOS):
 # Create output directory if it doesn't exist
 mkdir -p ./output
 
+docker run -d -p 8001:8001 \
+    --env-file .env \
+    -v "$(pwd)/output:/app/output" \
+    --name processing-service \
+    shortsgen processing_service/app.py
+
 docker run -d -p 8000:8000 \
     --env-file .env \
     -v "$(pwd)/output:/app/output" \
-    --name shortsgen-api \
-    shortsgen
+    --name api-gateway \
+    shortsgen api_gateway/app.py
 ```
 
 This command:
 
-- Starts the container in detached mode (`-d`).
-- Maps port 8000 from the container to your local machine (`-p 8000:8000`).
-- Loads environment variables from your `.env` file (`--env-file .env`).
-- Mounts the local output directory to `/app/output` inside the container (`-v ...`).
-- Names the container `shortsgen-api`.
-- Uses the `shortsgen` image built earlier.
+- Starts each container in detached mode (`-d`).
+- Maps port `8001` for the processing service and `8000` for the API gateway.
+- Loads environment variables from your `.env` file.
+- Mounts the local output directory to `/app/output` inside the containers.
+- Uses the `shortsgen` image for both services.
 
-The API server will start inside the container, accessible at http://localhost:8000. Generated videos will appear in your local output directory.
+The API gateway will be accessible at http://localhost:8000 and will forward requests to the processing service running on http://localhost:8001. Generated videos will appear in your local output directory.
 
 ## API Usage
 
@@ -286,8 +309,12 @@ graph TD
         UI[User via HTTP API]
     end
 
-    subgraph "Application Layer (FastAPI)"
-        A[main.py: FastAPI App]
+    subgraph "API Gateway"
+        AG[api_gateway]
+    end
+
+    subgraph "Processing Service"
+        PS[processing_service]
         M[JobManager]
         B[BackgroundTasks]
     end
@@ -316,11 +343,12 @@ graph TD
         ENV[.env File]
     end
 
-    UI -- Request --> A
-    A -- Create Job --> M
-    A -- Add Task --> B
+    UI -- Request --> AG
+    AG -- Forward --> PS
+    PS -- Create Job --> M
+    PS -- Add Task --> B
     B -- Run Job --> G
-    A -- Check Status --> M
+    AG -- Check Status --> PS
 
     G --> CS
     G --> IS
@@ -339,12 +367,12 @@ graph TD
     IS -- Uses Config --> C
     AS -- Uses Config --> C
     VE -- Uses Config --> C
-    A -- Uses Config --> C
+    AG -- Uses Config --> C
 
     C -- Reads --> ENV
 
     G -- Uses Logger --> L
-    A -- Uses Logger --> L
+    AG -- Uses Logger --> L
     CS -- Uses Logger --> L
     IS -- Uses Logger --> L
     AS -- Uses Logger --> L

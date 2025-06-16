@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="ShortsGen API", description="API for generating short videos")
+app = FastAPI(title="Processing Service API", description="Background processing service")
 
 # Job status models
 class JobStatus(BaseModel):
@@ -82,7 +82,7 @@ def get_job_manager() -> JobManager:
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"status": "online", "service": "ShortsGen API"}
+    return {"status": "online", "service": "Processing Service"}
 
 @app.post("/generate", response_model=JobStatus, status_code=status.HTTP_202_ACCEPTED)
 async def generate_video(
@@ -219,4 +219,4 @@ def process_generation_job(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("processing_service.app:app", host="0.0.0.0", port=8001, reload=False)
