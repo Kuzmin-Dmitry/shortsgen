@@ -1,51 +1,51 @@
 # ShortsGen: Creative Video Generator API
 
-ShortsGen is a Python application designed to automatically generate short, creative videos by combining AI-generated narratives, AI-generated or web-sourced images, and AI-generated audio narration. The application is exposed as a FastAPI service, allowing for asynchronous job processing.
+ShortsGen is a Python application designed to automatically generate short, creative videos by combining AI-generated narratives, AI-generated or web-sourced images, and AI-generated audio narration. The application is built as a microservice architecture with separate API Gateway and Processing Service components.
 
 ## Features
 
-* **API Interface:** Control video generation via a simple REST API (FastAPI).
-* **Asynchronous Processing:** Video generation runs in the background, allowing users to check job status.
+* **Microservice Architecture:** Separate API Gateway and Processing Service for better scalability
+* **API Interface:** Control video generation via a simple REST API (FastAPI)
+* **Asynchronous Processing:** Video generation runs in the background, allowing users to check job status
 * **Dual Image Sourcing:**
-    * Generate images using AI (OpenAI DALL-E 2/3).
-    * Find and download relevant images from the web (using DuckDuckGo Search).
-* **AI Narrative Generation:** Create unique mini-novels or use custom prompts (using OpenAI GPT-4o-mini or local models like Gemma).
-* **AI Audio Narration:** Generate voiceovers for the narrative using OpenAI TTS with configurable voice styles.
-* **Video Composition:** Assemble images and audio into a video using MoviePy.
-* **Visual Effects:** Apply optional Ken Burns effect (zoom/pan) and fade transitions to image clips.
-* **Configurable:** Easily configure API keys, models, directories, prompts, and video settings via `config.py` and `.env`.
-* **Docker Support:** Run the application easily as a containerized API service.
-* **Structured Logging:** Detailed logging using Python's standard `logging` module with configurable levels and formatting.
+    * Generate images using AI (OpenAI DALL-E 2/3)
+    * Find and download relevant images from the web (using DuckDuckGo Search)
+* **AI Narrative Generation:** Create unique mini-novels or use custom prompts (using OpenAI GPT-4o-mini or local models like Gemma)
+* **AI Audio Narration:** Generate voiceovers for the narrative using OpenAI TTS with configurable voice styles
+* **Video Composition:** Assemble images and audio into a video using MoviePy
+* **Visual Effects:** Apply optional Ken Burns effect (zoom/pan) and fade transitions to image clips
+* **Configurable:** Easily configure API keys, models, directories, prompts, and video settings via `config.py` and `.env`
+* **Docker Support:** Run the application easily as containerized services
+* **Structured Logging:** Detailed logging using Python's standard `logging` module with configurable levels and formatting
 
 ## Project Structure
 
 ```
-test-gemini/
+shortsgen/
 │
-├── api_gateway/           # Front-facing service
+├── api_gateway/           # Front-facing API service
 │   ├── __init__.py
 │   ├── app.py             # Routes client requests to the processing service
-│   └── requirements.txt   # Gateway dependencies
+│   ├── config.py          # Gateway-specific configuration
+│   ├── requirements.txt   # Gateway dependencies
+│   └── Dockerfile         # Gateway containerization
+│
 ├── processing_service/    # Background worker service
 │   ├── __init__.py
 │   ├── app.py             # Handles job execution and video generation
-│   └── requirements.txt   # Processing service dependencies
-├── config.py              # Central configuration (API keys, paths, models, prompts)
-├── requirements.txt       # Combined dependencies
-├── README.md              # This documentation file
-├── .env.example           # Example environment variables file
-│
-├── services/              # Core business logic modules
-│   ├── __init__.py
+│   ├── config.py          # Full application configuration
 │   ├── generator.py       # Orchestrates the video generation workflow
 │   ├── chat_service.py    # Text generation (OpenAI/Gemma)
 │   ├── image_service.py   # Image generation (DALL-E) & web search/download (DDGS)
 │   ├── audio_service.py   # Audio generation (OpenAI TTS)
-│   └── video_service.py   # Video editing and composition (MoviePy)
+│   ├── video_service.py   # Video editing and composition (MoviePy)
+│   ├── requirements.txt   # Processing service dependencies
+│   └── Dockerfile         # Processing service containerization
 │
-└── utils/                 # Utility tools
-    ├── __init__.py
-    └── logger.py          # Logging configuration
+├── docker-compose.yml     # Multi-service orchestration
+├── .env.example           # Example environment variables file
+├── requirements.txt       # Combined dependencies (for development)
+└── README.md              # This documentation file
 ```
 
 ## Installation
@@ -90,75 +90,153 @@ test-gemini/
 
 3. Review `config.py` for more detailed configuration options (models, prompts, image sizes, etc.).
 
-## Running the API (Docker Recommended)
+## Running the Application
 
-Using Docker simplifies deployment and dependency management.
+There are three ways to run ShortsGen: using Docker Compose (recommended), local development mode, or manual Docker setup.
 
 ### Prerequisites
 
-* Docker installed on your system.
-* A `.env` file created as described in the Configuration section.
+* Docker and Docker Compose installed on your system (for Docker options)
+* Python 3.8+ installed (for local development)
+* A `.env` file created as described in the Configuration section
 
-### Building the Docker Image
+## Quick Start
 
-From the project root directory:
-```bash
-docker build -t shortsgen .
-```
+### Option 1: Docker Compose (Recommended)
 
-### Running the Containers
-
-Create a local directory (e.g., output) to store the generated videos.
-
-First start the processing service (port 8001), then the API gateway (port 8000).
-
-Using PowerShell (Windows):
-
-```PowerShell
-# Create output directory if it doesn't exist
-if (-not (Test-Path .\output)) { New-Item -ItemType Directory -Force -Path .\output }
-
-docker run -d -p 8001:8001 `
-    --env-file .env `
-    -v ${PWD}\output:/app/output `
-    --name processing-service `
-    shortsgen processing_service/app.py
-
-docker run -d -p 8000:8000 `
-    --env-file .env `
-    -v ${PWD}\output:/app/output `
-    --name api-gateway `
-    shortsgen api_gateway/app.py
-```
-
-Using Bash (Linux/macOS):
+Docker Compose is the recommended way to run ShortsGen as it automatically handles service orchestration, networking, and dependency management.
 
 ```bash
-# Create output directory if it doesn't exist
+# Copy environment template (if available)
+cp .env.example .env
+
+# Edit .env file with your API keys
+# Minimum required: OPENAI_API_KEY
+# Optional: DEEPAI_API_KEY
+
+# Build and start both services
+docker-compose up --build
+
+# Or run in detached mode (background)
+docker-compose up -d --build
+```
+
+**Docker Compose features:**
+- Automatic service discovery and networking
+- Health checks for both services
+- Automatic dependency management (API Gateway waits for Processing Service)
+- Shared output volume for generated videos
+- Environment variable management
+
+**Useful Docker Compose commands:**
+```bash
+# Start services
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs
+
+# Rebuild and restart
+docker-compose up --build
+
+# View service status
+docker-compose ps
+```
+
+Services will be available at:
+- **API Gateway**: http://localhost:8000 (main entry point)
+- **Processing Service**: http://localhost:8001 (internal service)
+
+Generated videos will appear in the `./output` directory in your project root.
+
+### Option 2: Local Development
+
+For development with hot reload and easier debugging:
+
+**Windows:**
+```cmd
+# Install dependencies
+pip install -r requirements.txt
+
+# Start services using the provided batch script
+# This will open separate terminal windows for each service
+start-dev.bat
+```
+
+**Linux/Mac:**
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Make the script executable and run it
+chmod +x start-dev.sh
+./start-dev.sh
+```
+
+**What the development scripts do:**
+- Create necessary output directories (`output/scenes`, `output/video`, `output/voice`, `output/text`)
+- Start API Gateway on port 8000
+- Start Processing Service on port 8001
+- Provide process IDs for easy termination
+
+**To stop local development services:**
+- **Windows**: Close the terminal windows or press Ctrl+C in each service window
+- **Linux/Mac**: Use the kill command with the process IDs shown in the terminal output
+
+Services will be available at:
+- **API Gateway**: http://localhost:8000
+- **Processing Service**: http://localhost:8001
+
+### Option 3: Manual Docker Setup
+
+For advanced users who want more control over the Docker configuration:
+
+```bash
+# Create a custom network for the services
+docker network create shortsgen-net
+
+# Create output directory
 mkdir -p ./output
 
-docker run -d -p 8001:8001 \
-    --env-file .env \
-    -v "$(pwd)/output:/app/output" \
-    --name processing-service \
-    shortsgen processing_service/app.py
+# Build images for each service
+docker build -t shortsgen-processing ./processing_service
+docker build -t shortsgen-api ./api_gateway
 
-docker run -d -p 8000:8000 \
-    --env-file .env \
-    -v "$(pwd)/output:/app/output" \
-    --name api-gateway \
-    shortsgen api_gateway/app.py
+# Run processing service first
+docker run -d --name shortsgen-processing \
+  --network shortsgen-net \
+  -p 8001:8001 \
+  --env-file .env \
+  -v "$(pwd)/output:/app/output" \
+  shortsgen-processing
+
+# Run API gateway
+docker run -d --name shortsgen-api \
+  --network shortsgen-net \
+  -p 8000:8000 \
+  -e PROCESSING_SERVICE_URL=http://shortsgen-processing:8001 \
+  --env-file .env \
+  shortsgen-api
 ```
 
-This command:
+**Manual cleanup:**
+```bash
+# Stop and remove containers
+docker stop shortsgen-api shortsgen-processing
+docker rm shortsgen-api shortsgen-processing
 
-- Starts each container in detached mode (`-d`).
-- Maps port `8001` for the processing service and `8000` for the API gateway.
-- Loads environment variables from your `.env` file.
-- Mounts the local output directory to `/app/output` inside the containers.
-- Uses the `shortsgen` image for both services.
+# Remove custom network
+docker network rm shortsgen-net
 
-The API gateway will be accessible at http://localhost:8000 and will forward requests to the processing service running on http://localhost:8001. Generated videos will appear in your local output directory.
+# Remove images (optional)
+docker rmi shortsgen-api shortsgen-processing
+```
 
 ## API Usage
 
@@ -530,3 +608,57 @@ This table highlights key configurable parameters. Refer to config.py for the fu
 | SEARCH_QUERY_FUNCTION | List[Dict] | Function definition for OpenAI tool call to generate search queries | [{...}] |
 | TEST_AUDIO | bool | If True, skips audio generation if voice.mp3 exists | True |
 | TEST_SCENES | bool | If True, skips image generation/download if files exist | True |
+
+## Troubleshooting
+
+### Docker Compose Issues
+
+**Services fail to start:**
+```bash
+# Check service logs
+docker-compose logs api-gateway
+docker-compose logs processing-service
+
+# Check service status
+docker-compose ps
+
+# Rebuild images
+docker-compose down
+docker-compose build --no-cache
+docker-compose up
+```
+
+**Port conflicts:**
+If ports 8000 or 8001 are already in use, modify the ports in `docker-compose.yml`:
+```yaml
+services:
+  api-gateway:
+    ports:
+      - "8080:8000"  # Change external port
+  processing-service:
+    ports:
+      - "8081:8001"  # Change external port
+```
+
+**Permission issues with output directory:**
+```bash
+# On Linux/Mac, ensure proper permissions
+sudo chown -R $USER:$USER ./output
+chmod -R 755 ./output
+```
+
+**Environment variables not loaded:**
+- Ensure `.env` file exists in the project root
+- Check that environment variables are properly formatted in `.env`
+- Verify that your `.env` file contains at minimum `OPENAI_API_KEY`
+
+### General Issues
+
+**"OpenAI API key not found" error:**
+- Create a `.env` file in the project root
+- Add your OpenAI API key: `OPENAI_API_KEY=your_key_here`
+
+**Video generation fails:**
+- Check that the output directory has write permissions
+- Verify that all required API keys are configured
+- Check service logs for specific error messages
