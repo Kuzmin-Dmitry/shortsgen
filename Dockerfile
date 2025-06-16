@@ -72,7 +72,7 @@ EXPOSE 8000
 
 # Add health check to monitor application status
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8000/ || exit 1
 
 # Run the server
-CMD ["python", "main.py"]
+CMD ["python", "api_gateway/app.py"]
