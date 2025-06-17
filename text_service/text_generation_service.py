@@ -1,20 +1,25 @@
 """
-Module for generating text using language models.
+Core text generation service module.
 
 This module provides a unified interface for text generation using different
 language models including OpenAI's GPT models and local models like Gemma.
 """
 
-from typing import Dict, List, Optional, Any, Union, TypedDict, cast
+from typing import Dict, List, Optional, Any, Union, TypedDict
 from enum import Enum
 from dataclasses import dataclass
 import json
 import logging
 from openai import OpenAI
-from openai.types.chat import ChatCompletion
-from openai.types.chat.chat_completion import Choice, ChatCompletionMessage
 import requests
-from config import OPENAI_API_KEY, LOCAL_TEXT_TO_TEXT_MODEL
+from config import (
+    OPENAI_API_KEY, 
+    LOCAL_TEXT_TO_TEXT_MODEL, 
+    LOCAL_MODEL_URL,
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_MAX_TOKENS,
+    DEFAULT_TEMPERATURE
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +62,7 @@ class ModelResponse:
         """Check if response contains tool calls."""
         return self.tool_calls is not None and len(self.tool_calls) > 0
 
-class ChatService:
+class TextGenerationService:
     """
     Service for text generation using different language models.
     
@@ -67,22 +72,23 @@ class ChatService:
     
     def __init__(self, api_key: Optional[str] = None):
         """
-        Initialize the ChatService with optional custom API key.
+        Initialize the TextGenerationService with optional custom API key.
         
         Args:
             api_key: Optional API key for OpenAI. If None, uses key from config.
         """
         self.api_key = api_key or OPENAI_API_KEY
-        self.client = OpenAI(api_key=self.api_key)
-        logger.info("ChatService initialized with OpenAI client")
+        self.client = OpenAI(api_key=self.api_key) if self.api_key else None
+        logger.info("TextGenerationService initialized")
 
     def generate_text(
         self, 
         prompt: str, 
         functions: Optional[List[Dict[str, Any]]] = None, 
-        max_tokens: int = 300, 
+        max_tokens: int = DEFAULT_MAX_TOKENS, 
         model: Union[str, ModelType] = ModelType.OPENAI, 
-        temperature: float = 0.8
+        temperature: float = DEFAULT_TEMPERATURE,
+        system_prompt: Optional[str] = None
     ) -> Union[str, Dict[str, Any]]:
         """
         Generate text using the specified model.
@@ -93,6 +99,7 @@ class ChatService:
             max_tokens: Maximum number of tokens in the response
             model: Model type to use (ModelType enum or string)
             temperature: Controls randomness in generation (0.0-1.0)
+            system_prompt: Optional system prompt to set context
             
         Returns:
             Generated text or structured data from function calls
@@ -117,18 +124,17 @@ class ChatService:
         try:
             # Generate based on model type
             if model == ModelType.GEMMA:
-                response = self._generate_text_gemma3(prompt, max_tokens, temperature)
+                response = self._generate_text_gemma(prompt, max_tokens, temperature)
             else:
-                response = self._generate_text_openai(prompt, functions, max_tokens, temperature)
+                response = self._generate_text_openai(prompt, functions, max_tokens, temperature, system_prompt)
             
             # Log results
             if isinstance(response.content, str):
                 result_length = len(response.content)
                 logger.info(f"Text generation completed. Generated {result_length} characters")
                 logger.debug(f"Full result: {response.content}")
-            
-            # Return appropriate content based on tool calls
-            if response.has_tool_calls():
+              # Return appropriate content based on tool calls
+            if response.has_tool_calls() and response.tool_calls:
                 # If we have tool calls, return the parsed arguments from the first call
                 # This maintains backward compatibility with the current implementation
                 return response.tool_calls[0]['arguments']
@@ -143,11 +149,11 @@ class ChatService:
             logger.error(f"Unexpected error in text generation: {str(e)}")
             raise ModelException(f"Unexpected error: {str(e)}")
 
-    def _generate_text_gemma3(
+    def _generate_text_gemma(
         self, 
         prompt: str, 
-        max_tokens: int = 300, 
-        temperature: float = 0.7
+        max_tokens: int = DEFAULT_MAX_TOKENS, 
+        temperature: float = DEFAULT_TEMPERATURE
     ) -> ModelResponse:
         """
         Generate text using local Gemma model.
@@ -180,10 +186,7 @@ class ChatService:
             }
             
             # Send request to local Gemma instance
-            response = requests.post(
-                "http://localhost:11434/api/generate",
-                json=payload
-            )
+            response = requests.post(LOCAL_MODEL_URL, json=payload)
             
             # Handle the response
             if response.status_code == 200:
@@ -209,8 +212,9 @@ class ChatService:
         self, 
         prompt: str, 
         functions: Optional[List[Dict[str, Any]]] = None, 
-        max_tokens: int = 300, 
-        temperature: float = 0.8
+        max_tokens: int = DEFAULT_MAX_TOKENS, 
+        temperature: float = DEFAULT_TEMPERATURE,
+        system_prompt: Optional[str] = None
     ) -> ModelResponse:
         """
         Generate text using OpenAI models.
@@ -220,6 +224,7 @@ class ChatService:
             functions: List of function definitions for the model
             max_tokens: Maximum number of tokens to generate
             temperature: Controls randomness (0.0-1.0)
+            system_prompt: Optional system prompt
             
         Returns:
             ModelResponse containing the generated text and any tool calls
@@ -227,14 +232,23 @@ class ChatService:
         Raises:
             OpenAIException: If there's an error with the OpenAI API
         """
+        if not self.client:
+            raise OpenAIException("OpenAI client not initialized. Please provide API key.")
+            
         try:
+            # Create messages list
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            else:
+                messages.append({"role": "system", "content": "You are a comic book writer's assistant, ready to help create a unique plot."})
+            
+            messages.append({"role": "user", "content": prompt})
+            
             # Create parameters dictionary for OpenAI API
             params = {
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": "You are a comic book writer's assistant, ready to help create a unique plot."},
-                    {"role": "user", "content": prompt}
-                ],
+                "model": DEFAULT_OPENAI_MODEL,
+                "messages": messages,
                 "max_tokens": max_tokens,
                 "temperature": temperature
             }

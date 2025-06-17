@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api-gateway:
     build:
@@ -11,6 +9,9 @@ services:
       - PROCESSING_SERVICE_URL=http://processing-service:8001
     depends_on:
       - processing-service
+      - text-service
+      - audio-service
+      - video-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
@@ -18,6 +19,41 @@ services:
       retries: 3
       start_period: 5s
 
+  text-service:
+    build:
+      context: ./text_service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LOCAL_TEXT_TO_TEXT_MODEL=${LOCAL_TEXT_TO_TEXT_MODEL}
+      - LOCAL_MODEL_URL=${LOCAL_MODEL_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  audio-service:
+    build:
+      context: ./audio_service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEFAULT_OUTPUT_DIR=/app/output
+      - TEST_AUDIO=true
+    volumes:
+      - ./output:/app/output
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
   processing-service:
     build:
       context: ./processing_service
@@ -26,12 +62,34 @@ services:
       - "8001:8001"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DEEPAI_API_KEY=${DEEPAI_API_KEY}
+      - DEFAULT_OUTPUT_DIR=/app/output
+      - AUDIO_SERVICE_URL=http://audio-service:8003
+      - VIDEO_SERVICE_URL=http://video-service:8004
+    volumes:
+      - ./output:/app/output
+    depends_on:
+      - text-service
+      - audio-service
+      - video-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  video-service:
+    build:
+      context: ./video_service
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    environment:
       - DEFAULT_OUTPUT_DIR=/app/output
     volumes:
       - ./output:/app/output
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
       interval: 30s
       timeout: 10s
       retries: 3
