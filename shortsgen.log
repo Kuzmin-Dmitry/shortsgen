@@ -1,0 +1,8 @@
+2025-06-16 22:59:31,415 [INFO] audio_client: AudioClient initialized with base URL: http://audio-service:8003
+2025-06-16 22:59:31,416 [INFO] text_client: TextClient initialized with base URL: http://text-service:8002
+2025-06-16 22:59:31,416 [INFO] text_client_service: TextService initialized with HTTP client
+2025-06-16 22:59:31,702 [INFO] image_service: ImageService initialized with DALL-E model: dall-e-2, test_mode: True
+2025-06-16 22:59:31,702 [INFO] video_service: VideoEditor initialized with settings: resolution=1024x1024, fps=24, transitions=fade
+2025-06-16 22:59:31,703 [INFO] processing_service.generator: Generator initialized with all required services
+2025-06-16 22:59:31,704 [INFO] processing_service.text_client: TextClient initialized with base URL: http://text-service:8002
+2025-06-16 22:59:31,705 [INFO] processing_service.audio_client: AudioClient initialized with base URL: http://audio-service:8003

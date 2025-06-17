@@ -30,6 +30,7 @@ class JobStatus(BaseModel):
 class GenerationRequest(BaseModel):
     """Request model for generation jobs"""
     custom_prompt: Optional[str] = None  # Optional custom prompt
+    mock: Optional[bool] = False  # Enable mock mode for testing
 
 @dataclass
 class JobData:
@@ -85,6 +86,11 @@ async def root():
     """Health check endpoint"""
     return {"status": "online", "service": "Processing Service"}
 
+@app.get("/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "Processing Service"}
+
 @app.post("/generate", response_model=JobStatus, status_code=status.HTTP_202_ACCEPTED)
 async def generate_video(
     request: GenerationRequest, 
@@ -93,13 +99,15 @@ async def generate_video(
 ):
     """Start a video generation job"""
     job_id = job_manager.create_job()
-    logger.info(f"Received generation request, assigned job ID: {job_id}")
-      # Add job to background tasks
+    logger.info(f"Received generation request, assigned job ID: {job_id}, mock mode: {request.mock}")
+    
+    # Add job to background tasks
     background_tasks.add_task(
         process_generation_job, 
         job_id=job_id, 
         custom_prompt=request.custom_prompt,
         use_internet=False,
+        mock_mode=request.mock or False,
         job_manager=job_manager
     )
     
@@ -123,13 +131,14 @@ async def generate_from_internet(
 ):
     """Start a video generation job using internet images"""
     job_id = job_manager.create_job()
-    logger.info(f"Received generate from internet request, assigned job ID: {job_id}")
+    logger.info(f"Received generate from internet request, assigned job ID: {job_id}, mock mode: {request.mock}")
       # Add job to background tasks
     background_tasks.add_task(
         process_generation_job, 
         job_id=job_id, 
         custom_prompt=request.custom_prompt,
         use_internet=True,
+        mock_mode=request.mock or False,
         job_manager=job_manager
     )
     
@@ -169,6 +178,7 @@ def process_generation_job(
     job_id: int, 
     custom_prompt: Optional[str] = None, 
     use_internet: bool = False,
+    mock_mode: bool = False,
     job_manager: Optional[JobManager] = None,
     generator: Optional[Generator] = None
 ):
@@ -179,17 +189,17 @@ def process_generation_job(
         raise ValueError("job_manager is required")
         
     try:
-        logger.info(f"Starting processing for job {job_id}")
+        logger.info(f"Starting processing for job {job_id}, mock mode: {mock_mode}")
         job_manager.update_job(
             job_id, 
             status="processing",
             message="Video generation in progress"
-        )
-
-        # Generate based on the method requested
+        )        # Generate based on the method requested
         if use_internet:
+            # TODO: Add mock_mode support to find_and_generate
             success = generator.find_and_generate(custom_prompt=custom_prompt)
-        else:            # Call generate() without the custom_prompt parameter
+        else:
+            # TODO: Add mock_mode support to generate
             success = generator.generate()
         
         if success:

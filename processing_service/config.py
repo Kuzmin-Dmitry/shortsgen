@@ -19,11 +19,19 @@ load_dotenv()
 # API Keys and Authentication
 # ============================
 
-DEEPAI_API_KEY: Final[Optional[str]] = os.getenv("DEEPAI_API_KEY")
 OPENAI_API_KEY: Final[Optional[str]] = os.getenv("OPENAI_API_KEY")
 
 # URL of the processing service (api-gateway communicates with it)
 PROCESSING_SERVICE_URL: Final[str] = os.getenv("PROCESSING_SERVICE_URL", "http://localhost:8001")
+
+# URL of the text service  
+TEXT_SERVICE_URL: Final[str] = os.getenv("TEXT_SERVICE_URL", "http://text-service:8002")
+
+# URL of the audio service  
+AUDIO_SERVICE_URL: Final[str] = os.getenv("AUDIO_SERVICE_URL", "http://audio-service:8003")
+
+# URL of the video service  
+VIDEO_SERVICE_URL: Final[str] = os.getenv("VIDEO_SERVICE_URL", "http://video-service:8004")
 
 # ============================
 # Directory Configuration
@@ -64,8 +72,14 @@ class ImageModel(Enum):
 
 class TextModel(Enum):
     """Available text generation models."""
-    GPT4O_MINI_TTS = "gpt-4o-mini-tts"
+    GPT4O_MINI = "gpt-4o-mini"
     GEMMA3_12B = "gemma3:12b"
+
+class TTSModel(Enum):
+    """Available text-to-speech models."""
+    TTS_1 = "tts-1"
+    TTS_1_HD = "tts-1-hd"
+    GPT4O_MINI_TTS = "gpt-4o-mini-tts"
 
 class ImageSizes(Enum):
     """Available image size configurations."""
@@ -77,9 +91,12 @@ GENERATED_IMAGE_SIZE: Final[str] = ImageSizes.large.value
 DALLE_MODEL: Final[str] = ImageModel.DALLE_2.value
 
 # Text model settings
-OPENAI_MODEL: Final[str] = TextModel.GPT4O_MINI_TTS.value
+OPENAI_MODEL: Final[str] = TextModel.GPT4O_MINI.value
 LOCAL_TEXT_TO_TEXT_MODEL: Final[str] = TextModel.GEMMA3_12B.value
 LOCAL: Final[bool] = False  # Working with local models: "run ollama serve"
+
+# TTS model settings
+TTS_MODEL: Final[str] = TTSModel.GPT4O_MINI_TTS.value
 
 # ============================
 # Audio Configuration
@@ -90,9 +107,9 @@ class AudioConfig(TypedDict):
     voice: str
     format: str
 
-# Audio configuration
+# Audio configuration - using valid OpenAI TTS voices
 AUDIO_CONFIG: Final[AudioConfig] = {
-    "voice": "coral",
+    "voice": "alloy",  # Valid OpenAI TTS voices: alloy, echo, fable, onyx, nova, shimmer
     "format": "mp3"
 }
 

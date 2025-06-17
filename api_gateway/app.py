@@ -21,6 +21,7 @@ app = FastAPI(title="ShortsGen API Gateway", description="Routes requests to the
 
 class GenerationRequest(BaseModel):
     custom_prompt: Optional[str] = None
+    mock: Optional[bool] = False
 
 class JobStatus(BaseModel):
     job_id: int
@@ -51,12 +52,35 @@ async def _get(endpoint: str) -> dict:
 async def root():
     return {"status": "online", "service": "API Gateway"}
 
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "service": "API Gateway"}
+
 @app.post("/generate", response_model=JobStatus, status_code=202)
 async def generate(request: GenerationRequest):
+    if request.mock:
+        logger.info("Mock mode enabled - simulating generation without actual processing")
+        # Возвращаем фиктивный ответ без обращения к processing service
+        return JobStatus(
+            job_id=999999,
+            status="completed",
+            message="Mock generation completed successfully",
+            output_file="mock_output.mp4"
+        )
+    
     return await _post("/generate", request.dict())
 
 @app.post("/generateFromInternet", response_model=JobStatus, status_code=202)
 async def generate_from_internet(request: GenerationRequest):
+    if request.mock:
+        logger.info("Mock mode enabled - simulating internet generation without actual processing")
+        return JobStatus(
+            job_id=999998,
+            status="completed", 
+            message="Mock internet generation completed successfully",
+            output_file="mock_internet_output.mp4"
+        )
+    
     return await _post("/generateFromInternet", request.dict())
 
 @app.get("/status/{job_id}", response_model=JobStatus)
