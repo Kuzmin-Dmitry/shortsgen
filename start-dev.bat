@@ -20,10 +20,16 @@ echo Starting Processing Service on port 8001...
 cd ..\processing_service
 start "Processing Service" python app.py
 
+REM Start Text Service
+echo Starting Text Service on port 8002...
+cd ..\text_service
+start "Text Service" python app.py
+
 echo Services started!
 echo.
 echo API Gateway: http://localhost:8000
 echo Processing Service: http://localhost:8001
+echo Text Service: http://localhost:8002
 echo.
 echo Check the opened terminal windows for service logs.
 echo To stop services, close the terminal windows or press Ctrl+C in each.

@@ -5,16 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openai import OpenAI
-from openai.types.chat import ChatCompletion
 import logging
 
 from config import (
     OPENAI_API_KEY, 
-    OPENAI_MODEL, 
+    TTS_MODEL, 
     AUDIO_CONFIG, 
-    SYSTEM_PROMPT, 
-    ASSISTANT_MESSAGE, 
-    USER_PROMPT, 
     TEST_AUDIO
 )
 
@@ -64,7 +60,7 @@ class AudioService:
         
         Args:
             api_key: OpenAI API key, defaults to config.OPENAI_API_KEY
-            model: Model to use for generation, defaults to config.OPENAI_MODEL
+            model: Model to use for generation, defaults to config.TTS_MODEL
             audio_config: Voice configuration parameters, defaults to config.AUDIO_CONFIG
             test_mode: Whether to operate in test mode, defaults to config.TEST_AUDIO
             
@@ -73,7 +69,7 @@ class AudioService:
         """
         # Use provided values or fall back to configuration defaults
         self.api_key = api_key or OPENAI_API_KEY
-        self.model = model or OPENAI_MODEL
+        self.model = model or TTS_MODEL
         self.audio_config = audio_config or AUDIO_CONFIG
         self.test_mode = test_mode if test_mode is not None else TEST_AUDIO
         
@@ -116,20 +112,14 @@ class AudioService:
     def generate_audio(self, 
                       text: str, 
                       output_path: Union[str, Path], 
-                      language: Literal['en', 'ru'] = 'ru', 
-                      system_prompt: str = SYSTEM_PROMPT, 
-                      user_prompt: str = USER_PROMPT, 
-                      assistant_message: str = ASSISTANT_MESSAGE) -> AudioGenerationResult:
+                      language: Literal['en', 'ru'] = 'ru') -> AudioGenerationResult:
         """
         Generate audio from text and save it to the specified path.
         
         Args:
             text: The text to convert to speech
             output_path: The file path where the audio will be saved
-            language: The language of the text, either 'en' or 'ru'
-            system_prompt: The system prompt to use for generation
-            user_prompt: The user prompt template (will be formatted with {text})
-            assistant_message: The assistant message to include
+            language: The language of the text, either 'en' or 'ru' (currently not used by OpenAI TTS)
             
         Returns:
             AudioGenerationResult: Result object containing success status and metadata
@@ -162,22 +152,18 @@ class AudioService:
                     message="Using existing audio file (test mode)"
                 )
                 
-            # Generate new audio
-            logger.info(f"Generating audio track using model: {self.model}")
+            # Generate new audio using TTS endpoint
+            logger.info(f"Generating audio track using TTS model: {self.model}")
             
-            # Create API request
-            response = self._call_openai_api(text, system_prompt, user_prompt, assistant_message)
-            
-            # Process and save the audio
-            audio_base64 = response.choices[0].message.audio.data
-            audio_bytes = base64.b64decode(audio_base64)
+            # Create TTS API request
+            audio_data = self._call_openai_tts_api(text)
             
             # Ensure the output directory exists
             output_path.parent.mkdir(parents=True, exist_ok=True)
             
             # Save the file
             with open(output_path, "wb") as f:
-                f.write(audio_bytes)
+                f.write(audio_data)
             
             # Get file metadata
             file_size = output_path.stat().st_size / 1024  # Size in KB
@@ -207,34 +193,78 @@ class AudioService:
                 error=e
             )
     
-    def _call_openai_api(self, text: str, system_prompt: str, 
-                        user_prompt: str, assistant_message: str) -> ChatCompletion:
+    def _call_openai_tts_api(self, text: str) -> bytes:
         """
-        Make the API call to OpenAI for audio generation.
+        Make the API call to OpenAI TTS for audio generation.
         
         Args:
             text: The text to convert to speech
-            system_prompt: The system prompt to use
-            user_prompt: The user prompt template
-            assistant_message: The assistant message
             
         Returns:
-            ChatCompletion: The raw API response
+            bytes: The raw audio data
             
         Raises:
             GenerationError: If the API call fails
         """
         try:
-            return self.client.chat.completions.create(
+            # Ensure format is valid for OpenAI TTS API
+            format_value = self.audio_config.get("format", "mp3")
+            valid_formats = ["mp3", "opus", "aac", "flac", "wav", "pcm"]
+            if format_value not in valid_formats:
+                format_value = "mp3"  # Default to mp3 if invalid format
+                
+            response = self.client.audio.speech.create(
                 model=self.model,
-                modalities=["text", "audio"],
-                audio=self.audio_config,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt.format(text=text)},
-                    {"role": "assistant", "content": assistant_message}
-                ]
+                voice=self.audio_config.get("voice", "alloy"),  # Default to "alloy" if not specified
+                input=text,
+                response_format=format_value  # type: ignore
             )
+            return response.content
         except Exception as e:
             # Wrap API errors in our custom exception
-            raise GenerationError(f"OpenAI API call failed: {str(e)}") from e
+            raise GenerationError(f"OpenAI TTS API call failed: {str(e)}") from e
+
+    def generate_audio_in_memory(self, text: str, language: Literal['en', 'ru'] = 'ru') -> bytes:
+        """
+        Generate audio from text and return raw audio data without saving to file.
+        
+        Args:
+            text: The text to convert to speech
+            language: The language of the text, either 'en' or 'ru'
+            
+        Returns:
+            bytes: The raw audio data
+            
+        Raises:
+            GenerationError: If audio generation fails
+            ValueError: If input parameters are invalid
+        """
+        if not text or not text.strip():
+            raise ValueError("Text cannot be empty")
+            
+        try:
+            # Log input parameters
+            text_preview = text[:30] + "..." if len(text) > 30 else text
+            logger.info(f"Generating audio in memory, language={language}")
+            logger.debug(f"Text to synthesize: {text_preview}")
+            
+            # Generate audio using TTS endpoint
+            logger.info(f"Generating audio track using TTS model: {self.model}")
+            
+            # Create TTS API request
+            audio_data = self._call_openai_tts_api(text)
+            
+            logger.info(f"Audio generated successfully ({len(audio_data)} bytes)")
+            
+            return audio_data
+            
+        except ValueError as e:
+            # Re-raise validation errors
+            logger.error(f"Input validation error: {str(e)}")
+            raise
+            
+        except Exception as e:
+            # Capture all other errors
+            error_msg = f"Audio generation error: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise GenerationError(error_msg) from e
