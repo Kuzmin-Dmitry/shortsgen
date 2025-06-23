@@ -1,0 +1,53 @@
+{
+
+  // — Ограничиваем длину и количество вариантов —
+  "github.copilot.advanced": {
+    "length": 120,                 // ≤120 токенов ≈ 20‑30 строк
+    "inlineSuggestCount": 2,       // inline‑вариантов в фоне
+    "listCount": 5,                // вариантов в панели ⌃⏎
+    "temperature": 0.3,            // меньше — короче и точнее
+    "stops": {
+      "*": ["\n\n\n", "\n# end"],
+      "python": ["\n\n#", "\nif __name__ =="],
+      "dockerfile": ["\n\n#"],
+      "yaml": ["\n\n"]
+    }
+  },
+
+  // —— Code Generation ————————————————
+  "github.copilot.chat.codeGeneration.instructions": [
+    { "text": "Пиши только запрошенный фрагмент, максимум 30 строк" },
+    { "text": "Для Python, Dockerfile, YAML — избегай лишнего boilerplate" },
+    { "text": "Соблюдай правила ESLint/Prettier проекта" },
+    { "text": "Для публичных API добавляй исчерпывающие JSDoc/TSdoc-комментарии" },
+    { "text": "Старайся писать чистые функции, избегай побочных эффектов" }
+  ],
+
+  // — Test Generation —
+  "github.copilot.chat.testGeneration.instructions": [
+    { "text": "Используй Jest (или Vitest) с Describe/It‑структурой" },
+    { "text": "Следуй AAA‑паттерну (Arrange‑Act‑Assert)" },
+    { "text": "Покрывай edge‑кейсы и негативные сценарии" },
+    { "text": "Не генерируй лишний setup — только минимум для теста" }
+  ],
+
+  // — Review Selection —
+  "github.copilot.chat.reviewSelection.instructions": [
+    { "text": "Дай краткий итог. Затем — список рекомендаций с пояснениями" },
+    { "text": "Выявляй нарушения SOLID/KISS/YAGNI" },
+    { "text": "Отмечай потенциальные уязвимости (XSS, SQL‑Injection, Race Condition)" },
+    { "text": "Предлагай улучшения производительности, если сложность > O(n log n)" }
+  ],
+
+  // — Commit Message Generation —
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    { "text": "Следуй Conventional Commits 1.0.0 + gitmoji" },
+    { "text": "Начинай с маленькой буквы, без точки в конце" },
+    { "text": "Если ветка содержит #<номер>, добавь ссылку на issue" },
+    { "text": "Сохраняй длину заголовка ≤ 72 символов" }
+  ],
+
+  // —— Прочее ——————————
+  "github.copilot.telemetry.disable": false,
+  "github.copilot.editor.inlineSuggest.dismissKey": "escape"
+}
