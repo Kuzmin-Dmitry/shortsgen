@@ -1,14 +1,12 @@
 """
 Configuration module for Audio Service.
 
-This module contains all configuration settings for the audio microservice,
-including OpenAI TTS API configuration and audio parameters.
+This module contains all configuration settings specific to the audio generation service.
 """
 
 import os
 import logging
-from typing import Dict, Optional, Final
-from enum import Enum
+from typing import Optional, Final
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -21,72 +19,42 @@ load_dotenv()
 OPENAI_API_KEY: Final[Optional[str]] = os.getenv("OPENAI_API_KEY")
 
 # ============================
-# Audio Service Configuration
+# Model Configuration
 # ============================
 
-class TTSModel(Enum):
-    """Available text-to-speech models."""
-    TTS_1 = "tts-1"
-    TTS_1_HD = "tts-1-hd"
-
-class TTSVoice(Enum):
-    """Available TTS voices."""
-    ALLOY = "alloy"
-    ECHO = "echo"
-    FABLE = "fable"
-    ONYX = "onyx"
-    NOVA = "nova"
-    SHIMMER = "shimmer"
-
-class AudioFormat(Enum):
-    """Available audio formats."""
-    MP3 = "mp3"
-    OPUS = "opus"
-    AAC = "aac"
-    FLAC = "flac"
-    WAV = "wav"
-    PCM = "pcm"
-
-# TTS model settings
-TTS_MODEL: Final[str] = TTSModel.TTS_1.value
-
-# Audio configuration
-AUDIO_CONFIG: Final[Dict[str, str]] = {
-    "voice": TTSVoice.ALLOY.value,
-    "format": AudioFormat.MP3.value
-}
-
-# ============================
-# Directory Configuration
-# ============================
-
-DEFAULT_OUTPUT_DIR: Final[str] = os.getenv("DEFAULT_OUTPUT_DIR", "./output")
-
-# ============================
-# Testing Configuration
-# ============================
-
-# Testing flags
-TEST_AUDIO: Final[bool] = os.getenv("TEST_AUDIO", "true").lower() == "true"
+# OpenAI TTS Model Settings
+DEFAULT_TTS_MODEL: Final[str] = "gpt-4o-mini-tts"
+DEFAULT_VOICE: Final[str] = "alloy"
+DEFAULT_TTS_SPEED: Final[float] = 1.0          # 0.25 – 4.0
+DEFAULT_TTS_PITCH: Final[int] = 0             # ±12 полутонов
+DEFAULT_TTS_STYLE: Final[str] = "neutral"      # см. Enum AudioStyle
+DEFAULT_AUDIO_FORMAT: Final[str] = "mp3"
 
 # ============================
 # Service Configuration
 # ============================
 
-# Service port
+SERVICE_HOST: Final[str] = os.getenv("AUDIO_SERVICE_HOST", "0.0.0.0")
 SERVICE_PORT: Final[int] = int(os.getenv("AUDIO_SERVICE_PORT", "8003"))
 
-# Service host
-SERVICE_HOST: Final[str] = os.getenv("AUDIO_SERVICE_HOST", "0.0.0.0")
+# Audio output configuration
+AUDIO_OUTPUT_DIR: Final[str] = os.getenv("AUDIO_OUTPUT_DIR", "./output/voice")
+MAX_AUDIO_DURATION: Final[int] = int(os.getenv("MAX_AUDIO_DURATION", "300"))  # seconds
 
 # ============================
-# Logger Configuration
+# Logging Configuration
 # ============================
 
-# Configure application logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+LOG_LEVEL: Final[str] = os.getenv("LOG_LEVEL", "INFO")
+LOG_FORMAT: Final[str] = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 
-logger = logging.getLogger(__name__)
+def configure_logging() -> None:
+    """Configure application logging."""
+    logging.basicConfig(
+        level=getattr(logging, LOG_LEVEL.upper()),
+        format=LOG_FORMAT,
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler("audio_service.log", encoding="utf-8")
+        ]
+    )

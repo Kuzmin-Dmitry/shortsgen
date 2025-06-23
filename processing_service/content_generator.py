@@ -104,7 +104,7 @@ class ContentGenerator:
             )
     
     @with_retry(RetryConfig())
-    def generate_search_queries(self, narrative_text: str) -> StageResult:
+    def generate_search_queries(self, narrative_text: str, count_scenes: int = 6) -> StageResult:
         """Generate search queries for finding images."""
         stage_name = "search_queries"
         started_at = datetime.now()
@@ -113,7 +113,10 @@ class ContentGenerator:
             logger.info("Generating search queries for image search")
             
             search_result = self.text_service.generate_text(
-                prompt=SEARCH_USER_PROMPT.format(text=narrative_text),
+                prompt=SEARCH_USER_PROMPT.format(
+                    novella_text=narrative_text,
+                    count_scenes=count_scenes
+                ),
                 functions=SEARCH_QUERY_FUNCTION
             )
             

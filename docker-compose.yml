@@ -25,6 +25,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8002:8002"
+    env_file:
+      - .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - LOCAL_TEXT_TO_TEXT_MODEL=${LOCAL_TEXT_TO_TEXT_MODEL}
@@ -35,13 +37,14 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
   audio-service:
     build:
       context: ./audio_service
       dockerfile: Dockerfile
     ports:
       - "8003:8003"
+    env_file:
+      - .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEFAULT_OUTPUT_DIR=/app/output
@@ -54,12 +57,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+      
   processing-service:
     build:
       context: ./processing_service
       dockerfile: Dockerfile
     ports:
       - "8001:8001"
+    env_file:
+      - .env
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEFAULT_OUTPUT_DIR=/app/output
