@@ -9,4 +9,3 @@ pydantic==2.11.7
 duckduckgo-search==8.0.0
 # Enhanced architecture dependencies
 pydantic-settings==2.7.0
-asyncio-timeout==4.0.3
