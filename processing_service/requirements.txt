@@ -1,11 +1,5 @@
-requests==2.32.3
-moviepy==2.1.2
-numpy==2.2.4
-openai==1.86.0
-python-dotenv==1.1.0
-fastapi==0.115.12
-uvicorn==0.34.0
+fastapi==0.115.13
+uvicorn[standard]==0.34.3
+redis==6.2.0
 pydantic==2.11.7
-duckduckgo-search==8.0.0
-# Enhanced architecture dependencies
-pydantic-settings==2.7.0
+setuptools==80.9.0
