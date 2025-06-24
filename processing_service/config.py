@@ -34,6 +34,15 @@ AUDIO_SERVICE_URL: Final[str] = os.getenv("AUDIO_SERVICE_URL", "http://audio-ser
 VIDEO_SERVICE_URL: Final[str] = os.getenv("VIDEO_SERVICE_URL", "http://video-service:8004")
 
 # ============================
+# Redis Configuration
+# ============================
+
+REDIS_HOST: Final[str] = os.getenv("REDIS_HOST", "redis")
+REDIS_PORT: Final[int] = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_URL: Final[str] = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}")
+REDIS_CHANNEL: Final[str] = os.getenv("REDIS_CHANNEL", "task_queue")
+
+# ============================
 # Directory Configuration
 # ============================
 

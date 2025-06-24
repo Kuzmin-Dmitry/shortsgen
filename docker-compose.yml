@@ -77,12 +77,22 @@ services:
       - text-service
       - audio-service
       - video-service
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  redis:
+    image: redis:8.0-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
 
   video-service:
     build:
