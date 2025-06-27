@@ -67,6 +67,7 @@ class TTSService:
                     "success": True,
                     "message": "Audio generated successfully (cached)",
                     "audio_url": f"/output/voice/{filename}",
+                    "audio_path": filepath,
                     "file_size": file_size,
                     "filename": filename,
                 }
@@ -91,6 +92,7 @@ class TTSService:
                 "success": True,
                 "message": "Audio generated successfully",
                 "audio_url": f"/output/voice/{filename}",
+                "audio_path": filepath,
                 "file_size": file_size,
                 "filename": filename,
             }

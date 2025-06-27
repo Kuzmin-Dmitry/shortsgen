@@ -1,26 +1,31 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
+
+# Install system dependencies for moviepy and ffmpeg
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libfontconfig1 \
+    libxrender1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies required for video processing
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    fonts-dejavu-core \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
 # Create output directory
-RUN mkdir -p /app/output/video /app/output/scenes /app/output/voice
+RUN mkdir -p /app/output/video
+
+ENV PYTHONUNBUFFERED=1
 
 # Expose port
 EXPOSE 8004
@@ -29,5 +34,4 @@ EXPOSE 8004
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8004/health || exit 1
 
-# Run the application
-CMD ["python", "app.py"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8004"]

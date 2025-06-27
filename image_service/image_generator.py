@@ -1,13 +1,13 @@
-"""
-Image generation service implementation.
-"""
+"""Image generation service implementation."""
 
 import os
+import base64
 import hashlib
 import requests
-from typing import Dict, Any, Optional
+import asyncio
+from typing import Dict, Any
 from openai import OpenAI
-from config import OPENAI_API_KEY, IMAGES_OUTPUT_DIR, DEFAULT_SIZE, DEFAULT_STYLE, DEFAULT_QUALITY, logger
+from config import OPENAI_API_KEY, IMAGES_OUTPUT_DIR, DEFAULT_SIZE, DEFAULT_BACKGROUND, DEFAULT_QUALITY, logger
 
 
 class ImageService:
@@ -16,30 +16,15 @@ class ImageService:
     def __init__(self):
         """Initialize image service."""
         if not OPENAI_API_KEY:
-            logger.warning("OPENAI_API_KEY not set, image generation will fail")
-            self.client = None
-        else:
-            self.client = OpenAI(api_key=OPENAI_API_KEY)
-        self._ensure_output_dir()
-    
-    def _ensure_output_dir(self) -> None:
-        """Ensure output directory exists."""
+            raise ValueError("OPENAI_API_KEY is required")
+        
+        self.client = OpenAI(api_key=OPENAI_API_KEY)
         os.makedirs(IMAGES_OUTPUT_DIR, exist_ok=True)
     
-    def _generate_filename(self, prompt: str, size: str, style: str, quality: str) -> str:
-        """Generate unique filename based on parameters.
-        
-        Args:
-            prompt: Input prompt
-            size: Image size
-            style: Image style
-            quality: Image quality
-            
-        Returns:
-            Unique filename
-        """
+    def _generate_filename(self, prompt: str, size: str, background: str, quality: str) -> str:
+        """Generate unique filename based on parameters."""
         content_hash = hashlib.md5(
-            f"{prompt}_{size}_{style}_{quality}".encode()
+            f"{prompt}_{size}_{background}_{quality}".encode()
         ).hexdigest()[:12]
         return f"image_{content_hash}.png"
     
@@ -47,32 +32,15 @@ class ImageService:
         self,
         prompt: str,
         size: str = DEFAULT_SIZE,
-        style: str = DEFAULT_STYLE,
+        background: str = DEFAULT_BACKGROUND,
         quality: str = DEFAULT_QUALITY,
     ) -> Dict[str, Any]:
-        """Generate image asynchronously.
-        
-        Args:
-            prompt: Text prompt for image generation
-            size: Image size
-            style: Image style
-            quality: Image quality
-            
-        Returns:
-            Result dictionary
-        """
+        """Generate image asynchronously."""
         try:
-            filename = self._generate_filename(prompt, size, style, quality)
+            filename = self._generate_filename(prompt, size, background, quality)
             filepath = os.path.join(IMAGES_OUTPUT_DIR, filename)
             
-            # Check if OpenAI client is available
-            if not self.client:
-                return {
-                    "success": False,
-                    "message": "OpenAI API key not configured",
-                }
-            
-            # Check if file already exists
+            # Return cached image if exists
             if os.path.exists(filepath):
                 file_size = os.path.getsize(filepath)
                 width, height = self._parse_size(size)
@@ -80,45 +48,54 @@ class ImageService:
                     "success": True,
                     "message": "Image generated successfully (cached)",
                     "image_url": f"/output/images/{filename}",
+                    "image_path": filepath,
                     "file_size": file_size,
                     "filename": filename,
                     "width": width,
                     "height": height,
                 }
             
-            # Validate and convert parameters to proper types
-            valid_sizes = ["1024x1024", "1536x1024", "1024x1536", "256x256", "512x512", "1792x1024", "1024x1792"]
-            valid_styles = ["vivid", "natural"]
-            valid_qualities = ["standard", "hd"]
+            # Validate parameters
+            valid_sizes = {"1024x1024", "1536x1024", "1024x1536"}
+            valid_qualities = {"high", "medium", "low"}
+            valid_backgrounds = {"auto", "opaque", "transparent"}
             
-            # Use defaults if invalid values provided
             if size not in valid_sizes:
                 size = DEFAULT_SIZE
-            if style not in valid_styles:
-                style = DEFAULT_STYLE
+            if background not in valid_backgrounds:
+                background = DEFAULT_BACKGROUND
             if quality not in valid_qualities:
                 quality = DEFAULT_QUALITY
             
-            # Generate image using OpenAI DALL-E
+            # Generate image
             response = self.client.images.generate(
                 model="gpt-image-1",
                 prompt=prompt,
                 size=size,  # type: ignore
-                style=style,  # type: ignore
+                background=background,  # type: ignore
                 quality=quality,  # type: ignore
                 n=1,
             )
+            logger.info(f"OpenAI response generated successfully")
             
-            # Download and save image
-            if not response.data or not response.data[0].url:
-                raise ValueError("No image URL returned from OpenAI")
-                
-            image_url = response.data[0].url
-            image_response = requests.get(image_url)
-            image_response.raise_for_status()
+            if not response.data or not response.data[0]:
+                raise ValueError("No image data returned from OpenAI")
             
-            with open(filepath, "wb") as f:
-                f.write(image_response.content)
+            # For gpt-image-1, images are returned as base64
+            image_data = response.data[0]
+            if hasattr(image_data, 'b64_json') and image_data.b64_json:
+                # Decode base64 and save
+                image_bytes = base64.b64decode(image_data.b64_json)
+                with open(filepath, "wb") as f:
+                    f.write(image_bytes)
+            elif hasattr(image_data, 'url') and image_data.url:
+                # Fallback for models that return URLs
+                image_response = requests.get(image_data.url)
+                image_response.raise_for_status()
+                with open(filepath, "wb") as f:
+                    f.write(image_response.content)
+            else:
+                raise ValueError("No image URL or base64 data returned from OpenAI")
             
             file_size = os.path.getsize(filepath)
             width, height = self._parse_size(size)
@@ -129,6 +106,7 @@ class ImageService:
                 "success": True,
                 "message": "Image generated successfully",
                 "image_url": f"/output/images/{filename}",
+                "image_path": filepath,
                 "file_size": file_size,
                 "filename": filename,
                 "width": width,
@@ -143,14 +121,7 @@ class ImageService:
             }
     
     def _parse_size(self, size: str) -> tuple[int, int]:
-        """Parse size string to width and height.
-        
-        Args:
-            size: Size string like "1024x1024"
-            
-        Returns:
-            Tuple of (width, height)
-        """
+        """Parse size string to width and height."""
         try:
             width, height = map(int, size.split('x'))
             return width, height
@@ -159,8 +130,6 @@ class ImageService:
     
     def generate_image(self, request) -> Any:
         """Synchronous wrapper for backward compatibility."""
-        import asyncio
-        
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
@@ -171,12 +140,11 @@ class ImageService:
             self.generate_image_async(
                 prompt=request.prompt,
                 size=getattr(request, 'size', DEFAULT_SIZE),
-                style=getattr(request, 'style', DEFAULT_STYLE),
+                background=getattr(request, 'background', DEFAULT_BACKGROUND),
                 quality=getattr(request, 'quality', DEFAULT_QUALITY),
             )
         )
         
-        # Convert to response object for compatibility
         from models import ImageGenerationResponse
         
         return ImageGenerationResponse(
@@ -187,8 +155,3 @@ class ImageService:
             width=result.get("width"),
             height=result.get("height"),
         )
-
-
-def get_image_service() -> ImageService:
-    """Get image service instance."""
-    return ImageService()

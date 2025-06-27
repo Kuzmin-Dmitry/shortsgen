@@ -1,85 +1,45 @@
 """
-Configuration module for Video Service.
-
-This module centralizes all configuration settings used in the video service.
+Video Service Configuration
 """
 
 import os
+import logging
 from typing import Final
-from dataclasses import dataclass
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# ============================
-# Directory Configuration
-# ============================
+# Redis Configuration  
+REDIS_HOST: Final[str] = os.getenv("REDIS_HOST", "redis")
+REDIS_PORT: Final[int] = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_URL: Final[str] = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}")
+VIDEO_QUEUE: Final[str] = "queue:video-service"
 
-@dataclass
-class Directories:
-    """Application directory structure configuration."""
-    
-    base: str = os.getenv("DEFAULT_OUTPUT_DIR", "./output")
-    scenes: str = ""
-    video: str = ""
-    voice: str = ""
-    text: str = ""
-    
-    def __post_init__(self) -> None:
-        """Initialize derived directory paths."""
-        self.scenes = os.path.join(self.base, "scenes")
-        self.video = os.path.join(self.base, "video")
-        self.voice = os.path.join(self.base, "voice")
-        self.text = os.path.join(self.base, "text")
-        
-        # Create directories if they don't exist
-        for directory in [self.base, self.scenes, self.video, self.voice, self.text]:
-            os.makedirs(directory, exist_ok=True)
-
-DIRS = Directories()
-
-# ============================
 # Video Configuration
-# ============================
-
-# Video output settings
-VIDEO_FILE_NAME: Final[str] = "video.mp4"
-VIDEO_FILE_PATH: Final[str] = os.path.join(DIRS.video, VIDEO_FILE_NAME)
-
-# Video generation settings
-FONTSIZE: Final[int] = 72
-CHUNK_SIZE: Final[int] = 512
-HORIZONTAL_SIZE: Final[int] = 1024
-
-# ============================
-# Service URLs
-# ============================
-
-PROCESSING_SERVICE_URL: Final[str] = os.getenv("PROCESSING_SERVICE_URL", "http://processing-service:8001")
-VIDEO_SERVICE_URL: Final[str] = os.getenv("VIDEO_SERVICE_URL", "http://video-service:8004")
-
-# ============================
-# Default Settings
-# ============================
-
 DEFAULT_FPS: Final[int] = 24
-DEFAULT_WIDTH: Final[int] = 1024
-DEFAULT_HEIGHT: Final[int] = 1024
-DEFAULT_FADE_DURATION: Final[float] = 0.5
+DEFAULT_RESOLUTION: Final[tuple] = (1920, 1080)
+DEFAULT_FORMAT: Final[str] = "mp4"
+DEFAULT_CODEC: Final[str] = "libx264"
+DEFAULT_AUDIO_CODEC: Final[str] = "aac"
 
-# Font configuration
-DEFAULT_FONT_PATH: Final[str] = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-FALLBACK_FONT_PATH: Final[str] = '/System/Library/Fonts/Arial.ttf'  # macOS fallback
-WINDOWS_FONT_PATH: Final[str] = 'C:/Windows/Fonts/arial.ttf'  # Windows fallback
+# File Storage
+OUTPUT_DIR: Final[str] = os.getenv("OUTPUT_DIR", "/app/output")
+VIDEO_OUTPUT_DIR: Final[str] = f"{OUTPUT_DIR}/video"
+AUDIO_INPUT_DIR: Final[str] = f"{OUTPUT_DIR}/voice"
+IMAGES_INPUT_DIR: Final[str] = f"{OUTPUT_DIR}/images"
 
-def get_system_font() -> str:
-    """Get appropriate system font based on OS"""
-    if os.path.exists(DEFAULT_FONT_PATH):
-        return DEFAULT_FONT_PATH
-    elif os.path.exists(FALLBACK_FONT_PATH):
-        return FALLBACK_FONT_PATH
-    elif os.path.exists(WINDOWS_FONT_PATH):
-        return WINDOWS_FONT_PATH
-    else:
-        return DEFAULT_FONT_PATH  # Let moviepy handle font fallback
+# Video Effects Configuration
+DEFAULT_SLIDE_DURATION: Final[float] = 3.0  # seconds per slide
+DEFAULT_TRANSITION_DURATION: Final[float] = 0.5  # transition between slides
+DEFAULT_ZOOM_FACTOR: Final[float] = 1.1  # ken burns effect zoom
+
+# Service Configuration
+SERVICE_HOST: Final[str] = os.getenv("VIDEO_SERVICE_HOST", "0.0.0.0")
+SERVICE_PORT: Final[int] = int(os.getenv("VIDEO_SERVICE_PORT", "8004"))
+
+# Logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
