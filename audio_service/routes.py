@@ -5,11 +5,12 @@ Audio Service Routes - API endpoints for text-to-speech operations.
 import logging
 from fastapi import APIRouter, HTTPException
 from models import AudioGenerationRequest, AudioGenerationResponse, HealthResponse
-from tts_service import get_tts_service
+from tts_service import TTSService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+tts_service = TTSService()
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -22,7 +23,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         service="audio-service",
-        version="1.0.0"
+        version="2.0.0"
     )
 
 @router.post("/generateAudio", response_model=AudioGenerationResponse)
@@ -42,13 +43,21 @@ async def generate_audio(request: AudioGenerationRequest):
     try:
         logger.info(f"Generating audio for text length: {len(request.text)} chars")
         
-        tts_service = get_tts_service()
-        response = tts_service.generate_audio(request)
+        result = await tts_service.generate_audio_async(
+            text=request.text,
+            voice=request.voice,
+            speed=request.speed,
+        )
         
-        if not response.success:
-            raise HTTPException(status_code=500, detail=response.message)
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result["message"])
         
-        return response
+        return AudioGenerationResponse(
+            success=result["success"],
+            message=result["message"],
+            audio_url=result.get("audio_url"),
+            file_size=result.get("file_size"),
+        )
         
     except Exception as e:
         logger.error(f"Audio generation failed: {str(e)}")
