@@ -37,7 +37,7 @@ VIDEO_SERVICE_URL: Final[str] = os.getenv("VIDEO_SERVICE_URL", "http://video-ser
 # Redis Configuration
 # ============================
 
-REDIS_HOST: Final[str] = os.getenv("REDIS_HOST", "redis")
+REDIS_HOST: Final[str] = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT: Final[int] = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_URL: Final[str] = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}")
 REDIS_CHANNEL: Final[str] = os.getenv("REDIS_CHANNEL", "task_queue")
@@ -241,4 +241,8 @@ TEST_SCENES: Final[bool] = True  # Skip images generation if exist
 # ============================
 
 # Configure application logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)

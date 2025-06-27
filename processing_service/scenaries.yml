@@ -1,0 +1,137 @@
+# -------------------------------------------------------
+# Сценарий 1: создание видео из текста, голосовой дорожки и N_SLIDES слайдов
+# -------------------------------------------------------
+scenario_id: "{{ UUID('ScenarioCreateVideo') }}"
+version: "1.0.0"
+name: ScenarioCreateVideo
+
+variables:
+  N_SLIDES: 3
+  PROMPT: "Напиши короткий текст про кота"
+  VIDEO_RESOLUTION: "1920x1080"
+
+# Примечание: Этот шаблон будет обработан ScenarioGenerator с логикой создания множественных задач
+tasks:
+  # 1. Генерируем основной текст
+  - id: "{{ UUID('CreateText') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: text-service
+    name: CreateText
+    queue: 0
+    consumers: []
+    prompt: "{{ PROMPT }}"
+    params:
+      model: gpt-4o-mini
+
+  # 2. Озвучиваем этот текст
+  - id: "{{ UUID('CreateVoice') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: audio-service
+    name: CreateVoice
+    queue: 0
+    consumers: []
+    text_task_id: "{{ UUID('CreateText') }}"
+
+  # 3. Генерируем промпты для слайдов (будет размножено по count)
+  - id: "{{ UUID('CreateSlidePrompt') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: text-service
+    name: CreateSlidePrompt
+    queue: 0
+    count: "{{ N_SLIDES }}"
+    consumers: []
+    prompt: "Сформулируй заголовок для слайда"
+    params:
+      model: gpt-4o-mini
+
+  # 4. Создаём слайды (будет размножено по count)
+  - id: "{{ UUID('CreateSlide') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: image-service
+    name: CreateSlide
+    queue: 0
+    count: "{{ N_SLIDES }}"
+    consumers: []
+    slide_prompt_id: "{{ UUID('CreateSlidePrompt') }}"
+    params:
+      style: modern-flat
+      resolution: "{{ VIDEO_RESOLUTION }}"
+
+  # 5. Финальный таск: собираем видео
+  - id: "{{ UUID('CreateVideo') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: video-service
+    name: CreateVideoFromSlides
+    queue: "{{ N_SLIDES + 1 }}"
+    consumers: []
+    slide_ids: []  # Будет заполнено ScenarioGenerator
+    voice_track_id: "{{ UUID('CreateVoice') }}"
+
+---
+
+# -------------------------------------------------------
+# Сценарий 2: только озвучка текста
+# -------------------------------------------------------
+scenario_id: "{{ UUID('ScenarioCreateVoice') }}"
+version: "1.0.0"
+name: ScenarioCreateVoice
+
+
+variables:
+  PROMPT: "Это небольшой текст, который нужно озвучить"
+
+tasks:
+  - id: "{{ UUID('CreateText') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: text-service
+    name: CreateText
+    queue: 0
+    consumers: []
+    prompt: "{{ PROMPT }}"
+    params:
+      model: gpt-4o-mini
+
+  - id: "{{ UUID('CreateVoice') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: audio-service
+    name: CreateVoice
+    queue: 0
+    consumers: []
+    text_task_id: "{{ UUID('CreateText') }}"
+
+---
+
+# -------------------------------------------------------
+# Сценарий 3: только создание N_SLIDES слайдов
+# -------------------------------------------------------
+scenario_id: "{{ UUID('ScenarioCreateSlides') }}"
+version: "1.0.0"
+name: ScenarioCreateSlides
+
+variables:
+  N_SLIDES:   5
+  BASE_PROMPT: "Опиши содержание для слайда"
+
+tasks:
+  - id: "{{ UUID('CreateSlidePrompt') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: text-service
+    name: CreateSlidePrompt
+    queue: 0
+    count: "{{ N_SLIDES }}"
+    consumers: []
+    prompt: "{{ BASE_PROMPT }}"
+    params:
+      model: gpt-4o-mini
+
+  - id: "{{ UUID('CreateSlide') }}"
+    scenario_id: "{{ scenario_id }}"
+    service: image-service
+    name: CreateSlide
+    queue: 0
+    count: "{{ N_SLIDES }}"
+    consumers: []
+    slide_prompt_id: "{{ UUID('CreateSlidePrompt') }}"
+    params:
+      style: flat
+      resolution: "{{ RESOLUTION | default('1024x768') }}"

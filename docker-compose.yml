@@ -71,6 +71,8 @@ services:
       - DEFAULT_OUTPUT_DIR=/app/output
       - AUDIO_SERVICE_URL=http://audio-service:8003
       - VIDEO_SERVICE_URL=http://video-service:8004
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./output:/app/output
     depends_on:

@@ -1,14 +1,13 @@
 {
-
   // — Ограничиваем длину и количество вариантов —
   "github.copilot.advanced": {
-    "length": 120,                 // ≤120 токенов ≈ 20‑30 строк
-    "inlineSuggestCount": 2,       // inline‑вариантов в фоне
-    "listCount": 5,                // вариантов в панели ⌃⏎
-    "temperature": 0.3,            // меньше — короче и точнее
+    "length": 120,
+    "inlineSuggestCount": 2,
+    "listCount": 5,
+    "temperature": 0.2,  // Снижено для большей точности
     "stops": {
       "*": ["\n\n\n", "\n# end"],
-      "python": ["\n\n#", "\nif __name__ =="],
+      "python": ["\n\n#", "\nif __name__ ==", "\n\n\n"],
       "dockerfile": ["\n\n#"],
       "yaml": ["\n\n"]
     }
@@ -16,25 +15,46 @@
 
   // —— Code Generation ————————————————
   "github.copilot.chat.codeGeneration.instructions": [
+    { "text": "КРИТИЧНО: Всегда сохраняй исходные отступы и контекст блока кода" },
+    { "text": "Python: СТРОГО 4 пробела на уровень, никогда не смешивай с табами" },
+    { "text": "При модификации кода - анализируй весь блок, не только строку" },
+    { "text": "Не используй sed-подобные замены - генерируй весь блок заново" },
     { "text": "Пиши только запрошенный фрагмент, максимум 30 строк" },
-    { "text": "Для Python, Dockerfile, YAML — избегай лишнего boilerplate" },
-    { "text": "Соблюдай правила ESLint/Prettier проекта" },
-    { "text": "Для публичных API добавляй исчерпывающие JSDoc/TSdoc-комментарии" },
-    { "text": "Старайся писать чистые функции, избегай побочных эффектов" }
+    { "text": "Для Python соблюдай PEP 8: длина строки ≤88 символов" },
+    { "text": "Python: копируй точные отступы из контекста выше и ниже" },
+    { "text": "Python: используй trailing comma в многострочных структурах" },
+    { "text": "Python: соблюдай правила импортов (stdlib, third-party, local)" },
+    { "text": "Для публичных API добавляй docstrings в стиле Google/NumPy" },
+    { "text": "Python: используй type hints для всех параметров и возвращаемых значений" }
+  ],
+
+  // — Дополнительные настройки для Python форматирования —
+  "github.copilot.chat.localePreference": "ru",
+  
+  // — Специфичные инструкции для Python —
+  "github.copilot.chat.python.instructions": [
+    { "text": "Всегда используй 4 пробела для отступов, никогда табы" },
+    { "text": "Максимальная длина строки 88 символов (Black formatter)" },
+    { "text": "Переноси длинные строки с выравниванием по открывающей скобке" },
+    { "text": "В многострочных вызовах функций каждый аргумент на новой строке" },
+    { "text": "Используй parentheses для многострочных выражений вместо backslash" },
+    { "text": "Соблюдай правила пустых строк: 2 перед top-level, 1 внутри классов" }
   ],
 
   // — Test Generation —
   "github.copilot.chat.testGeneration.instructions": [
-    { "text": "Используй Jest (или Vitest) с Describe/It‑структурой" },
-    { "text": "Следуй AAA‑паттерну (Arrange‑Act‑Assert)" },
+    { "text": "Для Python используй pytest с fixture и parametrize" },
+    { "text": "Следуй AAA‑паттерну (Arrange‑Act-Assert)" },
     { "text": "Покрывай edge‑кейсы и негативные сценарии" },
+    { "text": "Python: используй descriptive test names с test_ префиксом" },
     { "text": "Не генерируй лишний setup — только минимум для теста" }
   ],
 
   // — Review Selection —
   "github.copilot.chat.reviewSelection.instructions": [
     { "text": "Дай краткий итог. Затем — список рекомендаций с пояснениями" },
-    { "text": "Выявляй нарушения SOLID/KISS/YAGNI" },
+    { "text": "Выявляй нарушения SOLID/KISS/YAGNI и PEP 8 для Python" },
+    { "text": "Python: проверяй корректность type hints и docstrings" },
     { "text": "Отмечай потенциальные уязвимости (XSS, SQL‑Injection, Race Condition)" },
     { "text": "Предлагай улучшения производительности, если сложность > O(n log n)" }
   ],
@@ -47,6 +67,13 @@
     { "text": "Сохраняй длину заголовка ≤ 72 символов" }
   ],
 
+  // —— Дополнительные настройки для улучшения работы с Python ——
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": ["--line-length=88"],
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Args": ["--max-line-length=88"],
+  
   // —— Прочее ——————————
   "github.copilot.telemetry.disable": false,
   "github.copilot.editor.inlineSuggest.dismissKey": "escape"

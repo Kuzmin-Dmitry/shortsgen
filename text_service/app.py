@@ -1,30 +1,44 @@
 """
-Text Service API - Clean FastAPI application entry point.
+Text Service API - FastAPI приложение для генерации текста
 """
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-import logging
+import asyncio
 from fastapi import FastAPI
-from config import configure_logging, SERVICE_HOST, SERVICE_PORT
-from routes import router
-
-# Configure logging
-configure_logging()
-logger = logging.getLogger(__name__)
+from config import logger
+from task_handler import TaskHandler
 
 app = FastAPI(
     title="Text Service API",
-    description="Microservice for text generation operations",
-    version="1.0.0"
+    description="Микросервис для генерации текста с Redis очередями",
+    version="2.0.0"
 )
 
-# Include routes
-app.include_router(router)
+# Глобальный обработчик задач
+task_handler = TaskHandler()
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Запуск фонового слушателя задач"""
+    logger.info("Starting Text Service...")
+    await task_handler.connect()
+    asyncio.create_task(task_handler.listen_tasks())
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Закрытие соединений при остановке"""
+    logger.info("Shutting down Text Service...")
+    await task_handler.disconnect()
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "ok", "service": "text-service", "version": "2.0.0"}
+
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info(f"Starting Text Service on {SERVICE_HOST}:{SERVICE_PORT}")
-    uvicorn.run("app:app", host=SERVICE_HOST, port=SERVICE_PORT, reload=False)
+    logger.info("Starting Text Service on 0.0.0.0:8002")
+    uvicorn.run("app:app", host="0.0.0.0", port=8002, reload=False)
