@@ -1,0 +1,5 @@
+{
+  "scenario": "CreateVideo",
+  "description": "Напиши короткий текст про кота",
+  "slides_count": 3
+}
