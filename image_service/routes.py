@@ -1,38 +1,22 @@
-"""
-Image Service Routes - API endpoints for image generation operations.
-"""
+"""Image Service Routes - API endpoints for image generation operations."""
 
 import logging
 from fastapi import APIRouter, HTTPException
-from models import ImageGenerationRequest, ImageGenerationResponse, HealthResponse
+from models import ImageGenerationRequest, ImageGenerationResponse
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
+
 
 def get_image_service():
     """Get image service instance when needed."""
     from image_generator import ImageService
     return ImageService()
 
-@router.get("/health", response_model=HealthResponse)
-async def health_check():
-    """
-    Health check endpoint for service monitoring.
-    
-    Returns:
-        HealthResponse: Service health status information
-    """
-    return HealthResponse(
-        status="healthy",
-        service="image-service",
-        version="2.0.0"
-    )
 
 @router.post("/generateImage", response_model=ImageGenerationResponse)
 async def generate_image(request: ImageGenerationRequest):
-    """
-    Generate image from text prompt using DALL-E.
+    """Generate image from text prompt using DALL-E.
     
     Args:
         request: Image generation request containing prompt and parameters
@@ -50,7 +34,7 @@ async def generate_image(request: ImageGenerationRequest):
         result = await image_service.generate_image_async(
             prompt=request.prompt,
             size=request.size,
-            style=request.style,
+            background=request.background,
             quality=request.quality,
         )
         

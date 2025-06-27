@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from jinja2 import Environment, FileSystemLoader
 
-from config import logger
+from config import logger, NUMBER_OF_THE_SCENES
 from models import Scenario, Task
 
 
@@ -178,7 +178,7 @@ class ScenarioGenerator:
     def create_video_scenario(
         self,
         description: str,
-        slides_count: int = 3
+        slides_count: int = NUMBER_OF_THE_SCENES,
     ) -> Scenario:
         """Create video scenario with slides.
         
@@ -246,7 +246,7 @@ class ScenarioGenerator:
         """
         variables = {
             'PROMPT': description,
-            'N_SLIDES': 0,  # Default value to avoid template errors
+            'N_SLIDES': NUMBER_OF_THE_SCENES,  # Default value to avoid template errors
         }
         
         scenarios = self._load_scenarios(variables)
@@ -287,7 +287,7 @@ class ScenarioGenerator:
     def create_slides_scenario(
         self,
         base_prompt: str,
-        slides_count: int = 1
+        slides_count: int = NUMBER_OF_THE_SCENES,
     ) -> Scenario:
         """Create slides-only scenario.
         
