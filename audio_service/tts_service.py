@@ -1,111 +1,136 @@
+"""
+Text-to-Speech service implementation.
+"""
+
 import os
-import logging
-from typing import Optional, Generator
-from pathlib import Path
+import hashlib
+from typing import Dict, Any, Optional
 from openai import OpenAI
+from config import OPENAI_API_KEY, AUDIO_OUTPUT_DIR, DEFAULT_VOICE, DEFAULT_SPEED, logger
 
-from config import (
-    OPENAI_API_KEY,
-    DEFAULT_TTS_MODEL,
-    DEFAULT_VOICE,
-    DEFAULT_TTS_SPEED,
-    AUDIO_OUTPUT_DIR,
-)
-from models import (
-    AudioGenerationRequest,
-    AudioGenerationResponse,
-    TTSVoice,
-    AudioFormat,
-)
 
-logger = logging.getLogger(__name__)
-
-class OpenAITTSService:
-    """Service for OpenAI text-to-speech generation."""
+class TTSService:
+    """Text-to-Speech service using OpenAI API."""
     
     def __init__(self):
-        """Initialize OpenAI client."""
+        """Initialize TTS service."""
         if not OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY is required")
+        
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         self._ensure_output_dir()
     
     def _ensure_output_dir(self) -> None:
-        Path(AUDIO_OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+        """Ensure output directory exists."""
+        os.makedirs(AUDIO_OUTPUT_DIR, exist_ok=True)
     
-    # ---------- public API ----------
-
-    def generate_audio(self, request: AudioGenerationRequest) -> AudioGenerationResponse:
-        """Synchronously generate an audio file."""
-        if request.mock:
-            return self._mock_response(model=DEFAULT_TTS_MODEL)
-
+    def _generate_filename(self, text: str, voice: str, speed: float) -> str:
+        """Generate unique filename based on parameters.
+        
+        Args:
+            text: Input text
+            voice: Voice name
+            speed: Speech speed
+            
+        Returns:
+            Unique filename
+        """
+        content_hash = hashlib.md5(
+            f"{text}_{voice}_{speed}".encode()
+        ).hexdigest()[:12]
+        return f"audio_{content_hash}.mp3"
+    
+    async def generate_audio_async(
+        self,
+        text: str,
+        voice: str = DEFAULT_VOICE,
+        speed: float = DEFAULT_SPEED,
+    ) -> Dict[str, Any]:
+        """Generate audio asynchronously.
+        
+        Args:
+            text: Text to convert
+            voice: Voice to use
+            speed: Speech speed
+            
+        Returns:
+            Result dictionary
+        """
         try:
-            # Resolve parameters / fallbacks
-            voice = (request.voice or TTSVoice.ALLOY).value
-            audio_format = (request.format or AudioFormat.MP3).value
-            speed = request.speed or DEFAULT_TTS_SPEED
-
-            logger.debug(
-                "Generating audio | model=%s voice=%s format=%s speed=%.2f pitch=%d style=%s",
-                DEFAULT_TTS_MODEL,
-                voice,
-                audio_format,
-                speed
-            )
-
-            # 🔥 Core API call
+            filename = self._generate_filename(text, voice, speed)
+            filepath = os.path.join(AUDIO_OUTPUT_DIR, filename)
+            
+            # Check if file already exists
+            if os.path.exists(filepath):
+                file_size = os.path.getsize(filepath)
+                return {
+                    "success": True,
+                    "message": "Audio generated successfully (cached)",
+                    "audio_url": f"/output/voice/{filename}",
+                    "file_size": file_size,
+                    "filename": filename,
+                }
+            
+            # Generate audio using OpenAI
             response = self.client.audio.speech.create(
-                model=DEFAULT_TTS_MODEL,
+                model="gpt-4o-mini-tts",
                 voice=voice,
-                input=request.text,
-                response_format=audio_format,
-                speed=speed
+                input=text,
+                speed=speed,
             )
-
-            file_path = self._save_audio(response.content, audio_format, request.text)
-            file_size_kb = os.path.getsize(file_path) / 1024
-
-            return AudioGenerationResponse(
-                success=True,
-                message="Audio generated successfully",
-                file_size_kb=file_size_kb,
-                duration_seconds=self._estimate_duration(request.text, speed),
-                model_used=DEFAULT_TTS_MODEL,
+            
+            # Save audio file
+            with open(filepath, "wb") as f:
+                f.write(response.content)
+            
+            file_size = os.path.getsize(filepath)
+            
+            logger.info(f"Generated audio: {filename} ({file_size} bytes)")
+            
+            return {
+                "success": True,
+                "message": "Audio generated successfully",
+                "audio_url": f"/output/voice/{filename}",
+                "file_size": file_size,
+                "filename": filename,
+            }
+            
+        except Exception as e:
+            logger.error(f"TTS generation failed: {e}")
+            return {
+                "success": False,
+                "message": f"Audio generation failed: {str(e)}",
+            }
+    
+    def generate_audio(self, request) -> Any:
+        """Synchronous wrapper for backward compatibility."""
+        import asyncio
+        
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        result = loop.run_until_complete(
+            self.generate_audio_async(
+                text=request.text,
+                voice=getattr(request, 'voice', DEFAULT_VOICE),
+                speed=getattr(request, 'speed', DEFAULT_SPEED),
             )
-        except Exception as exc:
-            logger.exception("Audio generation failed: %s", exc)
-            return AudioGenerationResponse(success=False, message="Audio generation failed", error=str(exc))
-
-    # ---------- helpers ----------
-
-    def _save_audio(self, data: bytes, ext: str, source_text: str) -> str:
-        filename = f"audio_{hash(source_text)}.{ext}"
-        file_path = os.path.join(AUDIO_OUTPUT_DIR, filename)
-        with open(file_path, "wb") as f:
-            f.write(data)
-        logger.info("Saved audio file: %s", file_path)
-        return file_path
-
-    def _estimate_duration(self, text: str, speed: float) -> float:
-        words = len(text.split())
-        # базовая оценка исходя из 150 wpm, скорректированная по speed
-        return (words / 150) * 60 / speed
-
-    def _mock_response(self, model: str) -> AudioGenerationResponse:
+        )
+        
+        # Convert to response object for compatibility
+        from models import AudioGenerationResponse
+        
         return AudioGenerationResponse(
-            success=True,
-            message="Mock audio generated successfully",
-            file_size_kb=123.45,
-            duration_seconds=15.0,
-            model_used=model,
+            success=result["success"],
+            message=result["message"],
+            audio_url=result.get("audio_url"),
+            file_size=result.get("file_size"),
         )
 
-# Singleton accessor remains unchanged
-_service: Optional[OpenAITTSService] = None
 
-def get_tts_service() -> OpenAITTSService:
-    global _service
-    if _service is None:
-        _service = OpenAITTSService()
-    return _service
+def get_tts_service() -> TTSService:
+    """Get TTS service instance."""
+    return TTSService()

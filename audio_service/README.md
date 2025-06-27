@@ -1,58 +1,45 @@
 # Audio Service
 
-Микросервис для генерации аудио из текста с использованием OpenAI TTS API.
+Микросервис для генерации аудио с использованием OpenAI Text-to-Speech API.
 
-## Возможности
+## Архитектура
 
-- Преобразование текста в речь с использованием различных голосов
-- Поддержка множественных форматов аудио (MP3, WAV, OPUS и др.)
-- Мок-режим для тестирования без реальной генерации
-- Health check endpoint для мониторинга
+- **Redis Queue**: Обработка задач через Redis очереди
+- **Direct API**: Прямые HTTP запросы для генерации аудио
+- **OpenAI TTS**: Использует OpenAI API для преобразования текста в речь
 
 ## API Endpoints
 
-### POST /generateAudio
-Генерация аудио из текста.
+### Health Check
+```
+GET /health
+```
 
-**Request Body:**
-```json
+### Generate Audio
+```
+POST /generateAudio
 {
-  "text": "Привет! Это тестовое сообщение для генерации аудио.",
-  "language": "ru",
-  "voice": "alloy", 
-  "format": "mp3",
-  "mock": false
+    "text": "Текст для озвучивания",
+    "voice": "alloy",  // optional
+    "speed": 1.0,      // optional, 0.25-4.0
+    "format": "mp3"    // optional
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Audio generated successfully",
-  "file_size_kb": 123.45,
-  "duration_seconds": 15.2
-}
-```
+## Queue Tasks
 
-### GET /health
-Проверка состояния сервиса.
+Сервис обрабатывает задачи типа `CreateAudio` из очереди `queue:audio-service`.
 
-## Переменные окружения
+## Environment Variables
 
-- `OPENAI_API_KEY` - API ключ OpenAI (обязательно)
-- `AUDIO_SERVICE_HOST` - хост сервиса (по умолчанию: 0.0.0.0)
-- `AUDIO_SERVICE_PORT` - порт сервиса (по умолчанию: 8003)
-- `AUDIO_OUTPUT_DIR` - директория для сохранения аудио файлов
+- `OPENAI_API_KEY` - API ключ OpenAI
+- `REDIS_URL` - URL подключения к Redis
+- `OUTPUT_DIR` - Директория для сохранения аудио файлов
+- `AUDIO_SERVICE_PORT` - Порт сервиса (по умолчанию 8003)
 
-## Запуск
+## Dependencies
 
-```bash
-python app.py
-```
-
-Или через Docker:
-```bash
-docker build -t audio-service .
-docker run -p 8003:8003 audio-service
-```
+- FastAPI 
+- OpenAI Python SDK
+- Redis
+- Pydantic
