@@ -11,6 +11,7 @@ services:
       - processing-service
       - text-service
       - audio-service
+      - image-service
       - video-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
@@ -58,6 +59,27 @@ services:
       retries: 3
       start_period: 10s
       
+  image-service:
+    build:
+      context: ./image_service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    env_file:
+      - .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEFAULT_OUTPUT_DIR=/app/output
+      - TEST_IMAGE=true
+    volumes:
+      - ./output:/app/output
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      
   processing-service:
     build:
       context: ./processing_service
@@ -70,6 +92,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEFAULT_OUTPUT_DIR=/app/output
       - AUDIO_SERVICE_URL=http://audio-service:8003
+      - IMAGE_SERVICE_URL=http://image-service:8005
       - VIDEO_SERVICE_URL=http://video-service:8004
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -78,6 +101,7 @@ services:
     depends_on:
       - text-service
       - audio-service
+      - image-service
       - video-service
       - redis
     healthcheck:
