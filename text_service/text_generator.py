@@ -18,7 +18,7 @@ class GetTextOpenAI:
     async def generate_text(
         self, 
         prompt: str,
-        model: str = "gpt-3.5-turbo",
+        model: str = "o4-mini",
         tone: str = "neutral",
         language: str = "ru", 
         max_tokens: int = 256

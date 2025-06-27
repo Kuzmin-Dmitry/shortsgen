@@ -1,7 +1,7 @@
 # -------------------------------------------------------
 # Сценарий 1: создание видео из текста, голосовой дорожки и N_SLIDES слайдов
 # -------------------------------------------------------
-scenario_id: "{{ UUID('ScenarioCreateVideo') }}"
+scenario_id: "{{ SHORT_UUID('ScenarioCreateVideo') }}"
 version: "1.0.0"
 name: ScenarioCreateVideo
 
@@ -13,7 +13,7 @@ variables:
 # Примечание: Этот шаблон будет обработан ScenarioGenerator с логикой создания множественных задач
 tasks:
   # 1. Генерируем основной текст
-  - id: "{{ UUID('CreateText') }}"
+  - id: "{{ SHORT_UUID('CreateText') }}"
     scenario_id: "{{ scenario_id }}"
     service: text-service
     name: CreateText
@@ -24,16 +24,16 @@ tasks:
       model: gpt-4o-mini
 
   # 2. Озвучиваем этот текст
-  - id: "{{ UUID('CreateVoice') }}"
+  - id: "{{ SHORT_UUID('CreateVoice') }}"
     scenario_id: "{{ scenario_id }}"
-    service: audio-service
+    service: voice-service
     name: CreateVoice
     queue: 0
     consumers: []
-    text_task_id: "{{ UUID('CreateText') }}"
+    text_task_id: "{{ SHORT_UUID('CreateText') }}"
 
   # 3. Генерируем промпты для слайдов (будет размножено по count)
-  - id: "{{ UUID('CreateSlidePrompt') }}"
+  - id: "{{ SHORT_UUID('CreateSlidePrompt') }}"
     scenario_id: "{{ scenario_id }}"
     service: text-service
     name: CreateSlidePrompt
@@ -45,27 +45,27 @@ tasks:
       model: gpt-4o-mini
 
   # 4. Создаём слайды (будет размножено по count)
-  - id: "{{ UUID('CreateSlide') }}"
+  - id: "{{ SHORT_UUID('CreateSlide') }}"
     scenario_id: "{{ scenario_id }}"
     service: image-service
     name: CreateSlide
     queue: 0
     count: "{{ N_SLIDES }}"
     consumers: []
-    slide_prompt_id: "{{ UUID('CreateSlidePrompt') }}"
+    slide_prompt_id: "{{ SHORT_UUID('CreateSlidePrompt') }}"
     params:
       style: modern-flat
       resolution: "{{ VIDEO_RESOLUTION }}"
 
   # 5. Финальный таск: собираем видео
-  - id: "{{ UUID('CreateVideo') }}"
+  - id: "{{ SHORT_UUID('CreateVideo') }}"
     scenario_id: "{{ scenario_id }}"
     service: video-service
     name: CreateVideoFromSlides
     queue: "{{ N_SLIDES + 1 }}"
     consumers: []
     slide_ids: []  # Будет заполнено ScenarioGenerator
-    voice_track_id: "{{ UUID('CreateVoice') }}"
+    voice_track_id: "{{ SHORT_UUID('CreateVoice') }}"
 
 ---
 
@@ -93,7 +93,7 @@ tasks:
 
   - id: "{{ UUID('CreateVoice') }}"
     scenario_id: "{{ scenario_id }}"
-    service: audio-service
+    service: voice-service
     name: CreateVoice
     queue: 0
     consumers: []

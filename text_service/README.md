@@ -30,7 +30,7 @@ service: text-service
 name: CreateSlidePrompt
 prompt: "Создай заголовок для слайда о космосе"
 params:
-  model: "gpt-3.5-turbo"
+  model: "gpt-4o-mini"
 ```
 
 ## Конфигурация

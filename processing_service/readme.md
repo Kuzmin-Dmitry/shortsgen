@@ -218,6 +218,7 @@ tasks:
 ## Модели данных Python
 
 ```python
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
@@ -232,8 +233,28 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
 
 
-class Task(BaseModel):
+@dataclass
+class Task:
     """Модель задачи из scenaries.yml."""
+    id: str
+    scenario_id: str
+    service: str
+    name: str
+    queue: int
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    consumers: List[str]
+    prompt: Optional[str] = None
+    text_task_id: Optional[str] = None
+    slide_prompt_id: Optional[str] = None
+    voice_track_id: Optional[str] = None
+    slide_ids: List[str] = field(default_factory=list)
+    params: Dict = field(default_factory=dict)
+
+
+class TaskPydantic(BaseModel):
+    """Pydantic модель задачи для валидации."""
     id: str                                   # SHORT_UUID
     scenario_id: str                          # SHORT_UUID
     service: str                              # text-service, voice-service, etc.
@@ -260,7 +281,7 @@ class Scenario(BaseModel):
     version: str
     name: str
     variables: Dict[str, Any] = {}
-    tasks: List[Task] = []
+    tasks: List[TaskPydantic] = []
 
 
 # Request/Response models

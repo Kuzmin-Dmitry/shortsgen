@@ -5,3 +5,4 @@ openai==1.91.0
 python-dotenv==1.1.0
 python-multipart==0.0.20
 requests==2.32.4
+redis==5.0.1
