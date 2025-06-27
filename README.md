@@ -13,6 +13,7 @@ Microservice-based application for automatic video generation using AI-generated
 | **Text Service** | 8002 | Text/narrative generation | OpenAI GPT-4o-mini, Gemma |
 | **Audio Service** | 8003 | TTS audio generation | OpenAI TTS |
 | **Video Service** | 8004 | Video composition, effects | MoviePy |
+| **Image Service** | 8005 | AI image generation | OpenAI DALL-E |
 
 ### Features
 
