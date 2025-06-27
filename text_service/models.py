@@ -1,22 +1,36 @@
 """
-Data models for Text Service API requests and responses.
+Data models for text service.
 """
 
-from pydantic import BaseModel
-from typing import Optional
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
 
 
-class TextGenerationRequest(BaseModel):
-    """Request model for text generation endpoint."""
-    prompt: str
-    max_tokens: Optional[int] = 300
-    temperature: Optional[float] = 0.8
+class TaskStatus(str, Enum):
+    """Task execution status - matches processing-service."""
+    PENDING = "pending"
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    SUCCESS = "success"
+    FAILED = "failed"
 
 
-class TextGenerationResponse(BaseModel):
-    """Response model for text generation endpoint."""
-    success: bool
-    content: str = ""
-    message: str = ""
-    model_used: str = ""
-    tokens_generated: int = 0
+class Task(BaseModel):
+    """Task model matching processing-service structure."""
+    id: str
+    scenario_id: str
+    service: str
+    name: str
+    queue: int = 0
+    status: TaskStatus = TaskStatus.PENDING
+    created_at: str = ""
+    updated_at: str = ""
+    consumers: List[str] = Field(default_factory=list)
+    params: Dict[str, Any] = Field(default_factory=dict)
+    result_ref: str = ""
+    
+    # Task-specific fields
+    prompt: Optional[str] = None
+    text_task_id: Optional[str] = None

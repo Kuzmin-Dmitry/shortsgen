@@ -1,57 +1,30 @@
 """
-Configuration module for Text Service.
-
-This module contains all configuration settings specific to the text generation service.
+Text Service Configuration
 """
 
 import os
 import logging
-from typing import Optional, Final
+from typing import Final
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# ============================
-# API Keys and Authentication
-# ============================
+# OpenAI Configuration
+OPENAI_API_KEY: Final[str] = os.getenv("OPENAI_API_KEY", "")
 
-OPENAI_API_KEY: Final[Optional[str]] = os.getenv("OPENAI_API_KEY")
+# Redis Configuration  
+REDIS_HOST: Final[str] = os.getenv("REDIS_HOST", "redis")
+REDIS_PORT: Final[int] = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_URL: Final[str] = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}")
+TEXT_QUEUE: Final[str] = "queue:text-service"
 
-# ============================
-# Model Configuration
-# ============================
+# File Storage
+OUTPUT_DIR: Final[str] = os.getenv("OUTPUT_DIR", "/app/output")
+TEXT_OUTPUT_DIR: Final[str] = f"{OUTPUT_DIR}/text"
 
-# OpenAI Model Settings
-DEFAULT_OPENAI_MODEL: Final[str] = "gpt-4o-mini"
-DEFAULT_MAX_TOKENS: Final[int] = 300
-DEFAULT_TEMPERATURE: Final[float] = 0.8
-
-# Local model settings
-LOCAL_TEXT_TO_TEXT_MODEL: Final[str] = os.getenv("LOCAL_TEXT_TO_TEXT_MODEL", "gemma2:2b")
-LOCAL_MODEL_URL: Final[str] = os.getenv("LOCAL_MODEL_URL", "http://localhost:11434/api/generate")
-
-# ============================
-# Service Configuration
-# ============================
-
-SERVICE_HOST: Final[str] = os.getenv("TEXT_SERVICE_HOST", "0.0.0.0")
-SERVICE_PORT: Final[int] = int(os.getenv("TEXT_SERVICE_PORT", "8002"))
-
-# ============================
-# Logging Configuration
-# ============================
-
-LOG_LEVEL: Final[str] = os.getenv("LOG_LEVEL", "INFO")
-LOG_FORMAT: Final[str] = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-
-def configure_logging() -> None:
-    """Configure application logging."""
-    logging.basicConfig(
-        level=getattr(logging, LOG_LEVEL.upper()),
-        format=LOG_FORMAT,
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler('text_service.log', encoding='utf-8')
-        ]
-    )
+# Logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
