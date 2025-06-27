@@ -1,19 +1,20 @@
 """
-Task handler for image service using Redis-based architecture.
+Task handler for video service using Redis-based architecture.
 """
 
 import json
 import asyncio
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import redis.asyncio as redis
-from config import REDIS_URL, IMAGE_QUEUE, logger
+from config import REDIS_URL, VIDEO_QUEUE, logger
 from models import Task, TaskStatus
-from image_generator import ImageService
+from video_generator import VideoService
 
 
 class TaskHandler:
-    """Task handler for image service with Redis queue."""
+    """Task handler for video service with Redis queue."""
     
     def __init__(self, redis_url: str = REDIS_URL):
         """Initialize task handler.
@@ -23,7 +24,7 @@ class TaskHandler:
         """
         self.redis_url = redis_url
         self.redis: Optional[Any] = None
-        self.image_service = ImageService()
+        self.video_service = VideoService()
     
     async def connect(self) -> None:
         """Connect to Redis."""
@@ -42,19 +43,19 @@ class TaskHandler:
             logger.info("Disconnected from Redis")
     
     async def listen_tasks(self) -> None:
-        """Listen for tasks in image-service queue."""
+        """Listen for tasks in video-service queue."""
         if not self.redis:
             await self.connect()
         
         if not self.redis:
             raise RuntimeError("Failed to connect to Redis")
         
-        logger.info(f"Started listening for tasks on {IMAGE_QUEUE}...")
+        logger.info(f"Started listening for tasks on {VIDEO_QUEUE}...")
         
         while True:
             try:
                 # Block and wait for task (right pop from queue)
-                result = await self.redis.brpop(IMAGE_QUEUE, timeout=1)
+                result = await self.redis.brpop(VIDEO_QUEUE, timeout=1)
                 
                 if result:
                     _, task_id = result
@@ -94,8 +95,8 @@ class TaskHandler:
             logger.info(f"Processing task {task_id}: {task.name}")
             
             # Route to appropriate handler
-            if task.name == "CreateImage" or task.name == "CreateSlide":
-                await self._handle_create_image(task)
+            if task.name in ["CreateVideo", "GenerateVideo", "CreateVideoFromSlides"]:
+                await self._handle_create_video(task)
             else:
                 logger.warning(f"Unknown task type: {task.name}")
                 await self._update_task_status(task_id, TaskStatus.FAILED)
@@ -212,41 +213,70 @@ class TaskHandler:
         except Exception as e:
             logger.error(f"Failed to trigger consumers for task {task.id}: {e}")
     
-    async def _handle_create_image(self, task: Task) -> None:
-        """Handle CreateImage/CreateSlide task.
+    async def _handle_create_video(self, task: Task) -> None:
+        """Handle CreateVideo/GenerateVideo task.
         
         Args:
             task: Task to process
         """
         try:
-            # Extract parameters
-            prompt = task.params.get("prompt", "")
-            background = task.params.get("background", "auto")
-            size = task.params.get("resolution", "1024x1024")  # scenaries.yml uses 'resolution'
-            quality = task.params.get("quality", "standard")
+            # Get audio path from voice_track_id dependency
+            audio_path = None
+            if task.voice_track_id:
+                audio_path = await self._get_audio_from_dependency(task.voice_track_id)
             
-            # If no prompt in params but has slide_prompt_id, try to get prompt from dependency
-            if not prompt and task.slide_prompt_id:
-                prompt = await self._get_prompt_from_dependency(task.slide_prompt_id)
+            # Get audio path from params if not from dependency
+            if not audio_path:
+                audio_path = task.params.get("audio_path", "")
             
-            # If still no prompt but has a direct prompt field, use it
-            if not prompt and task.prompt:
-                prompt = task.prompt
+            if not audio_path or not os.path.exists(audio_path):
+                raise ValueError(f"Audio file not found: {audio_path}")
             
-            if not prompt:
-                raise ValueError("Prompt parameter is required")
+            # Get image paths from slide_ids dependencies
+            image_paths = []
+            if task.slide_ids:
+                logger.info(f"Processing {len(task.slide_ids)} slide IDs: {task.slide_ids}")
+                for slide_id in task.slide_ids:
+                    img_path = await self._get_image_from_dependency(slide_id)
+                    if img_path and os.path.exists(img_path):
+                        image_paths.append(img_path)
+                        logger.info(f"Added image path: {img_path}")
+                    else:
+                        logger.warning(f"Image not found for slide {slide_id}: {img_path}")
             
-            # Generate image
-            result = await self.image_service.generate_image_async(
-                prompt=prompt,
-                size=size,
-                background=background,
-                quality=quality
+            # Get image paths from params if not from dependencies
+            if not image_paths:
+                image_paths = task.params.get("image_paths", [])
+                logger.info(f"Using image paths from params: {image_paths}")
+            
+            logger.info(f"Final image paths: {image_paths}")
+            
+            if not image_paths:
+                raise ValueError("No image paths provided")
+            
+            # Extract video generation parameters
+            fps = task.params.get("fps", 24)
+            resolution = task.params.get("resolution", (1920, 1080))
+            slide_duration = task.params.get("slide_duration", 3.0)
+            transition_duration = task.params.get("transition_duration", 0.5)
+            enable_ken_burns = task.params.get("enable_ken_burns", True)
+            zoom_factor = task.params.get("zoom_factor", 1.1)
+            
+            # Generate video
+            result = await self.video_service.generate_video_async(
+                audio_path=audio_path,
+                image_paths=image_paths,
+                fps=fps,
+                resolution=resolution,
+                slide_duration=slide_duration,
+                transition_duration=transition_duration,
+                enable_ken_burns=enable_ken_burns,
+                zoom_factor=zoom_factor,
             )
             
             if result["success"]:
                 # Store result
-                result_ref = result.get("image_path", result.get("filename", ""))
+                result_ref = result.get("video_path", "")
                 
                 # Update task as successful
                 await self._update_task_status(
@@ -258,51 +288,94 @@ class TaskHandler:
                 # Trigger consumers
                 await self._trigger_consumers(task)
                 
-                logger.info(f"Image generation completed for task {task.id}")
+                logger.info(f"Video generation completed for task {task.id}")
             else:
-                raise ValueError(result.get("message", "Image generation failed"))
+                raise ValueError(result.get("message", "Video generation failed"))
                 
         except Exception as e:
-            logger.error(f"CreateImage task failed: {e}")
+            logger.error(f"CreateVideo task failed: {e}")
             await self._update_task_status(task.id, TaskStatus.FAILED)
 
-    async def _get_prompt_from_dependency(self, prompt_task_id: str) -> str:
-        """Get prompt result from dependency task.
+    async def _get_audio_from_dependency(self, voice_task_id: str) -> str:
+        """Get audio file path from voice dependency task.
         
         Args:
-            prompt_task_id: ID of prompt generation task
+            voice_task_id: ID of voice generation task
             
         Returns:
-            Generated prompt or empty string if not found
+            Audio file path or empty string if not found
         """
         try:
             if not self.redis:
                 return ""
             
-            # Get prompt task data
-            prompt_task_key = f"task:{prompt_task_id}"
-            prompt_task_data = await self.redis.hgetall(prompt_task_key)
+            # Get voice task data
+            voice_task_key = f"task:{voice_task_id}"
+            voice_task_data = await self.redis.hgetall(voice_task_key)
             
-            if not prompt_task_data:
-                logger.warning(f"Prompt task {prompt_task_id} not found")
+            if not voice_task_data:
+                logger.warning(f"Voice task {voice_task_id} not found")
                 return ""
             
             # Check if task completed successfully
-            if prompt_task_data.get("status") != "success":
-                logger.warning(f"Prompt task {prompt_task_id} not completed successfully")
+            if voice_task_data.get("status") != "success":
+                logger.warning(f"Voice task {voice_task_id} not completed successfully")
                 return ""
             
-            # Get result reference (should contain the prompt)
-            result_ref = prompt_task_data.get("result_ref", "")
-            if result_ref:
-                # If result_ref is a file path, read the file
-                # If it's direct text, return it
-                # For now, assume it's direct text
+            # Get result reference (audio file path)
+            result_ref = voice_task_data.get("result_ref", "")
+            if result_ref and os.path.exists(result_ref):
                 return result_ref
             
-            logger.warning(f"No result found for prompt task {prompt_task_id}")
+            logger.warning(f"No audio file found for voice task {voice_task_id}")
             return ""
             
         except Exception as e:
-            logger.error(f"Failed to get prompt from dependency {prompt_task_id}: {e}")
+            logger.error(f"Failed to get audio from dependency {voice_task_id}: {e}")
+            return ""
+
+    async def _get_image_from_dependency(self, slide_task_id: str) -> str:
+        """Get image file path from slide dependency task.
+        
+        Args:
+            slide_task_id: ID of slide/image generation task
+            
+        Returns:
+            Image file path or empty string if not found
+        """
+        try:
+            if not self.redis:
+                return ""
+            
+            # Get slide task data
+            slide_task_key = f"task:{slide_task_id}"
+            slide_task_data = await self.redis.hgetall(slide_task_key)
+            
+            if not slide_task_data:
+                logger.warning(f"Slide task {slide_task_id} not found")
+                return ""
+            
+            # Check if task completed successfully
+            if slide_task_data.get("status") != "success":
+                logger.warning(f"Slide task {slide_task_id} not completed successfully")
+                return ""
+            
+            # Get result reference (image file path)
+            result_ref = slide_task_data.get("result_ref", "")
+            logger.info(f"Found result_ref for slide task {slide_task_id}: {result_ref}")
+            
+            if result_ref and os.path.exists(result_ref):
+                logger.info(f"Image file exists at: {result_ref}")
+                return result_ref
+            
+            if result_ref:
+                logger.warning(f"Image file does not exist at: {result_ref}")
+            else:
+                logger.warning(f"No result_ref found for slide task {slide_task_id}")
+            
+            logger.warning(f"No image file found for slide task {slide_task_id}")
+            return ""
+            
+        except Exception as e:
+            logger.error(f"Failed to get image from dependency {slide_task_id}: {e}")
             return ""

@@ -20,7 +20,7 @@
 {
   "prompt": "A beautiful sunset over mountains",
   "size": "1024x1024",
-  "style": "natural",
+  "background": "auto",
   "quality": "standard"
 }
 ```
