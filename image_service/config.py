@@ -1,5 +1,5 @@
 """
-Audio Service Configuration
+Image Service Configuration
 """
 
 import os
@@ -16,20 +16,20 @@ OPENAI_API_KEY: Final[str] = os.getenv("OPENAI_API_KEY", "")
 REDIS_HOST: Final[str] = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT: Final[int] = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_URL: Final[str] = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}")
-AUDIO_QUEUE: Final[str] = "queue:audio-service"
+IMAGE_QUEUE: Final[str] = "queue:image-service"
 
-# TTS Configuration
-DEFAULT_VOICE: Final[str] = "alloy"
-DEFAULT_SPEED: Final[float] = 1.0
-DEFAULT_FORMAT: Final[str] = "mp3"
+# Image Generation Configuration
+DEFAULT_SIZE: Final[str] = "1024x1024"
+DEFAULT_STYLE: Final[str] = "natural"
+DEFAULT_QUALITY: Final[str] = "low"
 
 # File Storage
 OUTPUT_DIR: Final[str] = os.getenv("OUTPUT_DIR", "/app/output")
-AUDIO_OUTPUT_DIR: Final[str] = f"{OUTPUT_DIR}/voice"
+IMAGES_OUTPUT_DIR: Final[str] = f"{OUTPUT_DIR}/images"
 
 # Service Configuration
-SERVICE_HOST: Final[str] = os.getenv("AUDIO_SERVICE_HOST", "0.0.0.0")
-SERVICE_PORT: Final[int] = int(os.getenv("AUDIO_SERVICE_PORT", "8003"))
+SERVICE_HOST: Final[str] = os.getenv("IMAGE_SERVICE_HOST", "0.0.0.0")
+SERVICE_PORT: Final[int] = int(os.getenv("IMAGE_SERVICE_PORT", "8005"))
 
 # Logging setup
 logging.basicConfig(
